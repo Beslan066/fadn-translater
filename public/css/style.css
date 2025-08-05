@@ -1,0 +1,33 @@
+.bg-blue-500 {
+    background-color:  #051945 !important;
+}
+
+option:hover    {
+    background-color:  #051945 !important;
+
+}
+
+.form-control {
+    border-color: #051945 !important;
+}
+.form-control:focus {
+    border-color: #051945 !important;
+    box-shadow: 0 0 0 0.2rem rgba(5, 25, 69, 0.25) !important;
+}
+
+input, select, textarea {
+    border-color: #051945;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #051945;
+    box-shadow: 0 0 0 0.2rem rgba(5, 25, 69, 0.25);
+}
+
+
+.menu-item, .menu-header, .menu-divider, .menu-block {
+    margin-bottom: 10px !important;
+}
+.menu-vertical .menu-item .menu-link {
+    font-size: 1rem !important;
+}
