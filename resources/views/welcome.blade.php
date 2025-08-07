@@ -7,13 +7,30 @@
             <div class="card">
                 <div class="card-body text-nowrap">
                     <h5 class="card-title mb-0 flex-wrap text-nowrap">Здравствуйте, {{auth()->user()->name}}</h5>
-                    <form method="POST" action="{{route('sentences.upload')}}" enctype="multipart/form-data">
-                        @csrf
-                        <input class="form-control mb-6" type="file" id="formFile" name="file">
-                        <button type="submit" class="btn btn-success">
-                            Загрузить корпус
-                        </button>
-                    </form>
+                    @if($sentenceCount <= 0)
+                        <form method="POST" action="{{route('sentences.upload')}}" enctype="multipart/form-data">
+                            @csrf
+                            <input class="form-control mb-6" type="file" id="formFile" name="file">
+                            <button type="submit" class="btn btn-success">
+                                Загрузить корпус
+                            </button>
+                        </form>
+                    @else
+                        <p class="d-flex flex-column mt-2">
+                            <span>
+                                Корпус уже загружен в базу, чтобы обновить корпус
+                            </span>
+                            <span>
+                                обратитесь к разработчику
+                            </span>
+                            <span>
+                                или перейдите на
+                                <a href="{{route('sentences.index')}}">
+                                     страницу Корпус
+                                </a>
+                            </span>
+                        </p>
+                    @endif
                 </div>
             </div>
         </div>

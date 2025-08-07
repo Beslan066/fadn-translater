@@ -5,7 +5,8 @@
         <div class="card-datatable text-nowrap">
             <div id="DataTables_Table_0_wrapper" class="dt-container dt-bootstrap5 dt-empty-footer">
                 <div class="row card-header mx-0 px-2">
-                    <div class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto">
+                    <div
+                        class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto">
                         <h5 class="card-title mb-0">Пользователи</h5>
                     </div>
                     <div class="d-md-flex justify-content-between align-items-center dt-layout-end col-md-auto ms-auto">
@@ -40,41 +41,87 @@
 
                 <!-- Фильтры и поиск -->
                 <div class="row m-3 mx-2 my-0 justify-content-between">
-                    <form method="GET" action="{{ route('users.index') }}" class="w-100">
+                    <form method="GET" action="{{ route('region-admin.users') }}" class="w-100">
+                        <input type="hidden" name="region_id" value="{{ auth()->user()->region_id }}">
                         <div class="row mt-2">
-                            <div class="col-md-3 mb-2">
+                            <div class="col-md-2 mb-2">
                                 <input type="search" name="search" class="form-control form-control-sm"
                                        placeholder="Поиск по имени или email"
                                        value="{{ request('search') }}"
                                        style="border:1px solid #d1cfd4 !important">
                             </div>
-                            <div class="col-md-3 mb-2">
-                                <select name="region" class="form-select form-select-sm">
-                                    <option value="">Все регионы</option>
-                                    @foreach($regions as $region)
-                                        <option value="{{ $region->id }}" {{ request('region') == $region->id ? 'selected' : '' }}>
-                                            {{ $region->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-3 mb-2">
+                            <div class="col-md-2 mb-2">
                                 <select name="status" class="form-select form-select-sm">
                                     <option value="">Все статусы</option>
-                                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Активные</option>
-                                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Неактивные</option>
-                                    <option value="deleted" {{ request('status') == 'deleted' ? 'selected' : '' }}>Удаленные</option>
+                                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>
+                                        Активные
+                                    </option>
+                                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>
+                                        Неактивные
+                                    </option>
+                                    <option value="deleted" {{ request('status') == 'deleted' ? 'selected' : '' }}>
+                                        Удаленные
+                                    </option>
                                 </select>
                             </div>
-                            <div class="col-md-3 mb-2">
+                            <div class="col-md-2 mb-2">
+                                <select name="role" class="form-select form-select-sm" id="role-select">
+                                    <option value="">Все роли</option>
+                                    <option value="translator" {{ request('role') == 'translator' ? 'selected' : '' }}>
+                                        Переводчик
+                                    </option>
+                                    <option
+                                        value="proofreader" {{ request('role') == 'proofreader' ? 'selected' : '' }}>
+                                        Корректор
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Фильтры, которые показываются только для переводчиков -->
+                            <div class="col-md-2 mb-2 translator-filters"
+                                 style="{{ request('role') != 'translator' ? 'display:none;' : '' }}">
+                                <select name="translation_status" class="form-select form-select-sm">
+                                    <option value="">Статус переводов</option>
+                                    <option value="1" {{ request('translation_status') == '1' ? 'selected' : '' }}>На
+                                        проверке
+                                    </option>
+                                    <option value="2" {{ request('translation_status') == '2' ? 'selected' : '' }}>
+                                        Проверено
+                                    </option>
+                                    <option value="3" {{ request('translation_status') == '3' ? 'selected' : '' }}>
+                                        Отклонено
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-2 translator-filters"
+                                 style="{{ request('role') != 'translator' ? 'display:none;' : '' }}">
+                                <select name="translations_count" class="form-select form-select-sm">
+                                    <option value="">Количество переводов</option>
+                                    <option
+                                        value="on_review" {{ request('translations_count') == 'on_review' ? 'selected' : '' }}>
+                                        На проверке
+                                    </option>
+                                    <option
+                                        value="approved" {{ request('translations_count') == 'approved' ? 'selected' : '' }}>
+                                        Проверено
+                                    </option>
+                                    <option
+                                        value="rejected" {{ request('translations_count') == 'rejected' ? 'selected' : '' }}>
+                                        Отклонено
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-2 mb-2">
                                 <div class="d-flex gap-2">
                                     <button type="submit" class="btn btn-sm btn-primary">Применить</button>
-                                    <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline-secondary">Сбросить</a>
+                                    <a href="{{ route('region-admin.users') }}" class="btn btn-sm btn-outline-secondary">Сбросить</a>
                                 </div>
                             </div>
                         </div>
                     </form>
                 </div>
+
 
                 <div class="justify-content-between dt-layout-table">
                     <div class="d-md-flex justify-content-between align-items-center dt-layout-full table-responsive">
@@ -162,7 +209,8 @@
                                             </div>
                                             <div class="d-flex flex-column">
                                                 <span class="emp_name text-truncate h6 mb-0">{{$user->name}}</span>
-                                                <small class="emp_post text-truncate">{{$user->getRoleNameAttribute()}}</small>
+                                                <small
+                                                    class="emp_post text-truncate">{{$user->getRoleNameAttribute()}}</small>
                                             </div>
                                         </div>
                                     </td>
@@ -193,31 +241,39 @@
                                                 <i class="icon-base ri ri-more-2-line icon-22px"></i>
                                             </a>
                                             <ul class="dropdown-menu dropdown-menu-end m-0">
-                                                <li><a class="dropdown-item">Создан: {{$user->created_at}}</a></li>
+                                                <li>
+                                                    <a class="dropdown-item">Создан: {{$user->created_at->format('d.m.Y H:i')}}</a>
+                                                </li>
                                                 @if($user->deleted_at)
                                                     <li>
-                                                        <form action="{{ route('users.restore', $user->id) }}" method="POST">
+                                                        <form action="{{ route('users.restore', $user->id) }}"
+                                                              method="POST">
                                                             @csrf
                                                             @method('PUT')
-                                                            <button type="submit" class="dropdown-item">Восстановить</button>
+                                                            <button type="submit" class="dropdown-item">Восстановить
+                                                            </button>
                                                         </form>
                                                     </li>
                                                 @else
                                                     <li>
-                                                        <form action="{{ route('users.archive', $user->id) }}" method="POST">
+                                                        <form action="{{ route('users.archive', $user->id) }}"
+                                                              method="POST">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" class="dropdown-item">Архивировать</button>
+                                                            <button type="submit" class="dropdown-item">Архивировать
+                                                            </button>
                                                         </form>
                                                     </li>
                                                 @endif
                                                 <div class="dropdown-divider"></div>
                                                 <li>
-                                                    <form action="{{ route('users.force-delete', $user->id) }}" method="POST">
+                                                    <form action="{{ route('users.force-delete', $user->id) }}"
+                                                          method="POST">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button onclick="return confirm('Вы действительно хотите безвозвратно удалить этого пользователя?');"
-                                                                class="dropdown-item text-danger delete-record">
+                                                        <button
+                                                            onclick="return confirm('Вы действительно хотите безвозвратно удалить этого пользователя?');"
+                                                            class="dropdown-item text-danger delete-record">
                                                             Удалить окончательно
                                                         </button>
                                                     </form>
@@ -238,8 +294,10 @@
                 </div>
                 <div class="row mx-2">
                     <div class="col-sm-12 col-md-6">
-                        <div class="dataTables_info mt-2 mb-2" id="DataTables_Table_0_info" role="status" aria-live="polite">
-                            Показано с {{ $users->firstItem() }} по {{ $users->lastItem() }} из {{ $users->total() }} записей
+                        <div class="dataTables_info mt-2 mb-2" id="DataTables_Table_0_info" role="status"
+                             aria-live="polite">
+                            Показано с {{ $users->firstItem() }} по {{ $users->lastItem() }} из {{ $users->total() }}
+                            записей
                         </div>
                     </div>
                     <div class="col-sm-12 col-md-6">
@@ -252,3 +310,32 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.getElementById('role-select').addEventListener('change', function() {
+            const translatorFilters = document.querySelectorAll('.translator-filters');
+            if (this.value === 'translator') {
+                translatorFilters.forEach(el => el.style.display = 'block');
+            } else {
+                translatorFilters.forEach(el => {
+                    el.style.display = 'none';
+                    // Сбрасываем значения фильтров переводов при смене роли
+                    const selects = el.querySelectorAll('select');
+                    selects.forEach(select => select.value = '');
+                });
+            }
+        });
+
+        // При загрузке страницы тоже проверяем значение
+        document.addEventListener('DOMContentLoaded', function() {
+            const roleSelect = document.getElementById('role-select');
+            if (roleSelect) {
+                const translatorFilters = document.querySelectorAll('.translator-filters');
+                if (roleSelect.value !== 'translator') {
+                    translatorFilters.forEach(el => el.style.display = 'none');
+                }
+            }
+        });
+    </script>
+@endpush

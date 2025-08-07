@@ -24,9 +24,9 @@ class Home
 
         switch ($user->role) {
             case 'proofreader':
-                return redirect()->route('proofreader.index');
+                return redirect()->route('proofreader.dashboard');
             case 'translator':
-                return redirect()->route('translator.index');
+                return redirect()->route('translator.dashboard');
             case 'region_admin':
                 return redirect()->route('region-admin.index');
             case 'super_admin':

@@ -18,14 +18,18 @@ class SentenceController extends Controller
 {
 
 
-    public function index() {
+    public function index(Request $request)
+    {
+        $search = $request->input('search');
 
-        $sentences = Sentence::paginate(20);
+        $sentences = Sentence::when($search, function($query) use ($search) {
+            return $query->where('sentence', 'like', '%'.$search.'%');
+        })->paginate(20);
 
         return view('pages.sentences.index', [
             'sentences' => $sentences,
+            'search' => $search
         ]);
-
     }
 
     public function upload(Request $request)

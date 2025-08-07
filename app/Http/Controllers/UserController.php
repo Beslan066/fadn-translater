@@ -19,12 +19,32 @@ class UserController extends Controller
     {
         $users = User::query()
             ->with('region')
-            ->withTrashed() // включаем удаленных пользователей
+            ->when($request->search, function($query) use ($request) {
+                $query->where(function($q) use ($request) {
+                    $q->where('name', 'like', '%'.$request->search.'%')
+                        ->orWhere('email', 'like', '%'.$request->search.'%');
+                });
+            })
+            ->when($request->region, function($query) use ($request) {
+                $query->where('region_id', $request->region);
+            })
+            ->when($request->status === 'active', function($query) {
+                $query->where('is_active', true)->whereNull('deleted_at');
+            })
+            ->when($request->status === 'inactive', function($query) {
+                $query->where('is_active', false)->whereNull('deleted_at');
+            })
+            ->when($request->status === 'deleted', function($query) {
+                $query->onlyTrashed();
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
+        $regions = Region::all();
+
         return view('pages.user.index', [
             'users' => $users,
+            'regions' => $regions,
         ]);
     }
 

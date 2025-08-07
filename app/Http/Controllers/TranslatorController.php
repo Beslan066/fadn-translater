@@ -12,13 +12,25 @@ class TranslatorController extends Controller
 {
 
     public function index() {
-        return view('pages.translator.index');
+
+        $translations = auth()->user()->translations()->get();
+
+        return view('pages.translator.index', [
+            'translations' => $translations,
+        ]);
     }
 
-    public function translations()
+    public function translations(Request $request)
     {
-        $translations = auth()->user()->translations()->paginate(10);
-
+        $translations = auth()->user()->translations()
+            ->when($request->search, function($query) use ($request) {
+                $query->where('translated_text', 'like', '%'.$request->search.'%');
+            })
+            ->when($request->status, function($query) use ($request) {
+                $query->where('status', $request->status);
+            })
+            ->paginate(10)
+            ->withQueryString();
 
         return view('pages.translator.translations', [
             'translations' => $translations,
@@ -28,6 +40,7 @@ class TranslatorController extends Controller
     public function dashboard()
     {
         $user = auth()->user();
+
 
         // 1. Ищем активный перевод пользователя
         $translation = $this->getActiveTranslation($user);
@@ -41,7 +54,7 @@ class TranslatorController extends Controller
         }
 
         return view('pages.translator.sentence', [
-            'translation' => $translation
+            'translation' => $translation,
         ]);
     }
 

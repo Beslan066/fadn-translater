@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\DB;
 class ProofreaderController extends Controller
 {
 
-    public function index() {
-        return view('pages.proofreader.index');
+    public function index()
+    {
+
     }
 
     public function translations()
@@ -26,12 +27,19 @@ class ProofreaderController extends Controller
 
     public function dashboard()
     {
+        $proofreadByMe = auth()->user()->proofreadByMe()->get();
+
         $translations = Translation::where('region_id', auth()->user()->region_id)
             ->where('status', Translation::STATUS_TRANSLATED)
             ->with(['sentence', 'translator'])
             ->paginate(10);
 
-        return view('pages.proofreader.dashboard', compact('translations'));
+        return view('pages.proofreader.dashboard',
+            [
+                'proofreadByMe' => $proofreadByMe,
+                'translations' => $translations,
+            ]
+        );
     }
 
     public function reviewTranslation(Request $request, Translation $translation)

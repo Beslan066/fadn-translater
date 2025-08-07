@@ -6,11 +6,11 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5>Управление предложениями региона</h5>
                 <form method="GET" action="{{ route('region-admin.sentences') }}" class="form-inline">
-                    <div class="input-group">
-                        <input type="text" name="search" class="form-control" placeholder="Поиск предложений..." value="{{ request('search') }}">
-                        <div class="input-group-append">
-                            <button class="btn btn-primary" type="submit">Найти</button>
-                        </div>
+                    <div class="dt-search d-flex align-items-center">
+                        <input type="search" name="search" value="" class="form-control form-control-sm" id="dt-search-0" placeholder="Поиск по названию или коду" aria-controls="DataTables_Table_0" style="border:1px solid #d1cfd4 !important; width: 250px;">
+                        <button type="submit" class="btn btn-sm btn-primary ms-2 waves-effect waves-light">
+                            <i class="icon-base ri ri-search-line"></i>
+                        </button>
                     </div>
                 </form>
             </div>

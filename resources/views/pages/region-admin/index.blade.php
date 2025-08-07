@@ -2,125 +2,50 @@
 
 @section('content')
     <div class="row gy-6">
-        <!-- Transactions -->
-        <div class="col-lg-8">
-            <div class="card h-100">
-                <div class="card-header">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h5 class="card-title m-0 me-2">Сводка</h5>
-                    </div>
-                    <p class="small mb-0">Здесь находится основная информация портала</p>
-                </div>
-                <div class="card-body pt-lg-10">
-                    <div class="row g-6">
-                        <div class="col-md-3 col-6">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar">
-                                    <div class="avatar-initial bg-primary rounded shadow-xs">
-                                        <i class="icon-base ri ri-list-view icon-24px"></i>
-                                    </div>
-                                </div>
-                                <div class="ms-3">
-                                    <p class="mb-0">Корпус</p>
-                                    @if(isset($sentenceCount))
-                                        <h5 class="mb-0">{{$sentenceCount}}</h5>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar">
-                                    <div class="avatar-initial bg-success rounded shadow-xs">
-                                        <i class="icon-base ri ri-group-line icon-24px"></i>
-                                    </div>
-                                </div>
-                                <div class="ms-3">
-                                    <p class="mb-0">Пользователи</p>
-                                    @if(isset($usersCount))
-                                        <h5 class="mb-0">{{$usersCount}}</h5>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar">
-                                    <div class="avatar-initial bg-warning rounded shadow-xs">
-                                        <i class="icon-base ri ri-text-block icon-24px"></i>
-                                    </div>
-                                </div>
-                                <div class="ms-3">
-                                    <p class="mb-0">Переводы</p>
-                                    @if(isset($translatesCount))
-                                        <h5 class="mb-0">{{$translatesCount}}</h5>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar">
-                                    <div class="avatar-initial bg-info rounded shadow-xs">
-                                        <i class="icon-base ri ri-map-2-fill icon-24px"></i>
-                                    </div>
-                                </div>
-                                <div class="ms-3">
-                                    <p class="mb-0">Регионы</p>
-                                    @if(isset($regionsCount))
-                                        <h5 class="mb-0">{{$regionsCount}}</h5>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!--/ Transactions -->
-
         <!-- Four Cards -->
-        <div class="col-xl-4 col-md-6">
-            <div class="row gy-6">
-                <div class="col-sm-6" style="height: 191px">
+        <div class="row gy-6">
+            <div class="" style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+                <!-- Всего переводов -->
+                <div class="col" style="height: 191px; max-width: 250px;">
                     <div class="card h-100">
                         <div class="card-header d-flex align-items-center justify-content-between">
                             <div class="avatar">
-                                <div class="avatar-initial bg-success rounded-circle shadow-xs">
-                                    <i class="icon-base ri ri-verified-badge-fill icon-24px"></i>
+                                <div class="avatar-initial bg-primary rounded-circle shadow-xs">
+                                    <i class="icon-base ri ri-file-list-2-line icon-24px"></i>
                                 </div>
                             </div>
                         </div>
                         <div class="card-body">
-                            <h6 class="mb-1">Всего переведено</h6>
+                            <h6 class="mb-1">Успешных переводов</h6>
                             <div class="d-flex flex-wrap mb-1 align-items-center">
-                                @if(isset($completedTranslations))
-                                    <h4 class="mb-0 me-2">{{$completedTranslations}}</h4>
-                                @endif
+                                <h4 class="mb-0 me-2">{{ $completedTranslations }}</h4>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-6" style="height: 191px">
+
+                <!-- Назначено -->
+                <div class="col" style="height: 191px; max-width: 250px;">
                     <div class="card h-100">
                         <div class="card-header d-flex align-items-center justify-content-between">
                             <div class="avatar">
-                                <div class="avatar-initial bg-warning rounded-circle shadow-xs">
-                                    <i class="icon-base ri ri-time-fill icon-24px"></i>
+                                <div class="avatar-initial bg-info rounded-circle shadow-xs">
+                                    <i class="icon-base ri ri-task-line icon-24px"></i>
                                 </div>
                             </div>
                         </div>
                         <div class="card-body">
-                            <h6 class="mb-1">В процессе</h6>
+                            <h6 class="mb-1">На проверке</h6>
                             <div class="d-flex flex-wrap mb-1 align-items-center">
-                                @if(isset($inProgressTranslations))
-                                    <h4 class="mb-0 me-2">{{$inProgressTranslations}}</h4>
-                                @endif
+                                <h4 class="mb-0 me-2">{{ $translatedTranslations }}</h4>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-6" style="height: 191px">
+
+
+                <!-- Отклонено -->
+                <div class="col" style="height: 191px; max-width: 250px;">
                     <div class="card h-100">
                         <div class="card-header d-flex align-items-center justify-content-between">
                             <div class="avatar">
@@ -132,9 +57,43 @@
                         <div class="card-body">
                             <h6 class="mb-1">Отклонено</h6>
                             <div class="d-flex flex-wrap mb-1 align-items-center">
-                                @if(isset($rejectedTranslations))
-                                    <h4 class="mb-0 me-2">{{$rejectedTranslations}}</h4>
-                                @endif
+                                <h4 class="mb-0 me-2">{{ $rejectedTranslations }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col" style="height: 191px; max-width: 250px;">
+                    <div class="card h-100">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <div class="avatar">
+                                <div class="avatar-initial bg-success rounded-circle shadow-xs">
+                                    <i class="icon-base ri ri-user-fill icon-24px"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="mb-1">Переводчиков</h6>
+                            <div class="d-flex flex-wrap mb-1 align-items-center">
+                                <h4 class="mb-0 me-2">{{ $translatorsCount }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col" style="height: 191px; max-width: 250px;">
+                    <div class="card h-100">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <div class="avatar">
+                                <div class="avatar-initial bg-warning rounded-circle shadow-xs">
+                                    <i class="icon-base ri ri-user-fill icon-24px"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="mb-1">Корректоров</h6>
+                            <div class="d-flex flex-wrap mb-1 align-items-center">
+                                <h4 class="mb-0 me-2">{{ $proofreadersCount }}</h4>
                             </div>
                         </div>
                     </div>
@@ -144,61 +103,174 @@
         </div>
         <!--/ four cards -->
 
-        <!-- Data Tables -->
-        <div class="col-12">
-            <div class="card overflow-hidden">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title m-0 me-2">Руководители регионов</h5>
-                </div>
-                <div class="table-responsive">
+        <div class="row gy-6">
+            <!-- Sales by Countries -->
+            <div class="col-xl-6 col-md-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h5 class="card-title m-0 me-2">Топ переводчиков</h5>
+                    </div>
 
-                    <table class="table table-sm">
-                        <thead>
-                        <tr>
-                            <th class="text-truncate">Имя</th>
-                            <th class="text-truncate">Email</th>
-                            <th class="text-truncate">Регион</th>
-                            <th class="text-truncate">Зарегистрирован</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @if(isset($supervisors))
-                            @foreach($supervisors as $supervisor)
+                    <div class="card-body">
+                        @foreach($topTranslators as $item)
+                            <div class="d-flex justify-content-between">
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="avatar me-4">
+                                        <div class="avatar-initial bg-label-success rounded-circle">
+                                            @if(isset($item->avatar))
+                                                <img src="{{asset('storage/' . $item->avatar)}}" alt="">
+                                            @else
+                                                <img src="{{asset('assets/img/user.png')}}" alt="">
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <h6 class="mb-0">{{$item->name}}</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <h6 class="mb-1">{{$item->translations_count}}</h6>
+                                    <small class="text-body-secondary">Переведено</small>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            <!--/ Sales by Countries -->
+            <!-- Sales by Countries -->
+            <div class="col-xl-6 col-md-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h5 class="card-title m-0 me-2">Топ корректоров</h5>
+                    </div>
+                    <div class="card-body">
+                        @foreach($topProofreaders as $item)
+                            <div class="d-flex justify-content-between">
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="avatar me-4">
+                                        <div class="avatar-initial bg-label-success rounded-circle">
+                                            @if(isset($item->avatar))
+                                                <img src="{{asset('storage/' . $item->avatar)}}" alt="">
+                                            @else
+                                                <img src="{{asset('assets/img/user.png')}}" alt="">
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <h6 class="mb-0">{{$item->name}}</h6>
+                                        </div>
+                                        </div>
+                                </div>
+                                <div class="text-end">
+                                    <h6 class="mb-1">{{$item->translations_count}}</h6>
+                                    <small class="text-body-secondary">Переведено</small>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            <!--/ Sales by Countries -->
+
+            <div class="col-12">
+                <div class="card overflow-hidden">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h5 class="card-title m-0 me-2">Неподтвержденные пользователи</h5>
+                    </div>
+                    <div class="table-responsive">
+
+                        <table class="table table-sm">
+                            <thead>
+                            <tr>
+                                <th class="text-truncate">Имя</th>
+                                <th class="text-truncate">Email</th>
+                                <th class="text-truncate">Зарегистрирован</th>
+                                <th class="text-truncate">Действие</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach($users as $user)
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar avatar-sm me-4">
-                                                @if($supervisor->avatar)
-                                                    <img src="{{asset('storage/public/' . $supervisor->avatar)}}" alt="Avatar" class="rounded-circle" />
+                                                @if(isset($item->avatar))
+                                                    <img src="{{asset('storage/' . $item->avatar)}}" alt="">
                                                 @else
-                                                    <img src="{{asset('user.png')}}" alt="Avatar" class="rounded-circle" />
+                                                    <img src="{{asset('assets/img/user.png')}}" alt="">
                                                 @endif
                                             </div>
                                             <div>
-                                                <h6 class="mb-0 text-truncate">{{$supervisor->name}}</h6>
+                                                <h6 class="mb-0 text-truncate">{{$user->name}}</h6>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="text-truncate">{{$supervisor->email}}</td>
+                                    <td class="text-truncate">{{$user->email}}</td>
+                                    <td><span class="badge bg-label-success rounded-pill">{{$user->created_at}}</span></td>
                                     <td class="text-truncate">
                                         <div class="d-flex align-items-center">
-                                            <span>{{$supervisor->region->name}}</span>
+                                            <span>Ингушетия</span>
                                         </div>
                                     </td>
-                                    <td><span class="badge bg-label-success rounded-pill">{{$supervisor->created_at}}</span></td>
+                                    <td class="d-flex align-items-center">
+                                        <div class="d-inline-block">
+                                            <a href="javascript:;"
+                                               class="btn btn-sm btn-text-secondary rounded-pill btn-icon dropdown-toggle hide-arrow"
+                                               data-bs-toggle="dropdown">
+                                                <i class="icon-base ri ri-more-2-line icon-22px"></i>
+                                            </a>
+                                            <ul class="dropdown-menu dropdown-menu-end m-0">
+                                                <li><a class="dropdown-item">Создан: {{$user->created_at}}</a></li>
+                                                @if($user->deleted_at)
+                                                    <li>
+                                                        <form action="{{ route('users.restore', $user->id) }}" method="POST">
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <button type="submit" class="dropdown-item">Восстановить</button>
+                                                        </form>
+                                                    </li>
+                                                @else
+                                                    <li>
+                                                        <form action="{{ route('users.archive', $user->id) }}" method="POST">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="dropdown-item">Архивировать</button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                                <div class="dropdown-divider"></div>
+                                                <li>
+                                                    <form action="{{ route('users.force-delete', $user->id) }}" method="POST">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button onclick="return confirm('Вы действительно хотите безвозвратно удалить этого пользователя?');"
+                                                                class="dropdown-item text-danger delete-record">
+                                                            Удалить окончательно
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <a href="{{route('users.edit', $user->id)}}"
+                                           class="btn btn-sm btn-text-secondary rounded-pill btn-icon item-edit">
+                                            <i class="icon-base ri ri-edit-box-line icon-22px"></i>
+                                        </a>
+                                    </td>
                                 </tr>
                             @endforeach
-                        @endif
-                        </tbody>
-                    </table>
-                </div>
-                @if(isset($supervisors))
-                    <div class="mt-2">
-                        {{$supervisors->links('pagination::bootstrap-5')}}
+                            </tbody>
+                        </table>
                     </div>
-                @endif
+                    <div class="mt-2">
+
+                    </div>
+                </div>
             </div>
+
         </div>
-        <!--/ Data Tables -->
     </div>
 @endsection

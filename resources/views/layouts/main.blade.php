@@ -96,9 +96,15 @@
                             </a>
                         </li>
                         <li class="menu-item">
-                            <a href="icons-ri.html" class="menu-link">
+                            <a href="{{route('region-admin.sentences')}}" class="menu-link">
                                 <i class="menu-icon icon-base ri ri-check-fill"></i>
                                 <div data-i18n="Icons">Переводы</div>
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{route('region-admin.users')}}" class="menu-link">
+                                <i class="menu-icon icon-base ri ri-account-circle-line"></i>
+                                <div data-i18n="Icons">Пользователи</div>
                             </a>
                         </li>
                     @elseif(auth()->user()->role === 'translator')
@@ -109,14 +115,21 @@
                             </a>
                         </li>
                         <li class="menu-item">
+                            <a href="{{route('translator.dashboard')}}" class="menu-link">
+                                <i class="menu-icon icon-base ri ri-keyboard-box-fill"></i>
+                                <div data-i18n="Icons">Перевод</div>
+                            </a>
+                        </li>
+
+                        <li class="menu-item">
                             <a href="{{route('translator.translations')}}" class="menu-link">
                                 <i class="menu-icon icon-base ri ri-check-fill"></i>
-                                <div data-i18n="Icons">Переводы</div>
+                                <div data-i18n="Icons">Прогресс</div>
                             </a>
                         </li>
                     @elseif(auth()->user()->role === 'proofreader')
                         <li class="menu-item">
-                            <a href="{{route('proofreader.index')}}" class="menu-link">
+                            <a href="{{route('proofreader.dashboard')}}" class="menu-link">
                                 <i class="menu-icon icon-base ri ri-home-3-line"></i>
                                 <div data-i18n="User interface">Главная</div>
                             </a>
@@ -125,6 +138,12 @@
                             <a href="{{route('proofreader.translations')}}" class="menu-link">
                                 <i class="menu-icon icon-base ri ri-check-fill"></i>
                                 <div data-i18n="Icons">Переводы</div>
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{route('proofreader.users')}}" class="menu-link">
+                                <i class="menu-icon icon-base ri ri-account-circle-line"></i>
+                                <div data-i18n="Icons">Пользователи</div>
                             </a>
                         </li>
                     @endif
@@ -145,20 +164,11 @@
                                 <div data-i18n="Icons">Регионы</div>
                             </a>
                         </li>
+
+
                     @endif
 
-
-
-
-
-                    <li class="menu-item">
-                        <a href="icons-ri.html" class="menu-link">
-                            <i class="menu-icon icon-base ri ri-filter-2-line"></i>
-                            <div data-i18n="Icons">Статистика</div>
-                        </a>
-                    </li>
-
-                    @if(in_array(auth()->user()->role, ['fadn', 'super_admin', 'region_admin']))
+                    @if(in_array(auth()->user()->role, ['fadn', 'super_admin']))
                         <li class="menu-item">
                             <a href="{{route('users.index')}}" class="menu-link">
                                 <i class="menu-icon icon-base ri ri-account-circle-line"></i>
@@ -166,7 +176,6 @@
                             </a>
                         </li>
                     @endif
-
                 </ul>
             </div>
 
@@ -235,17 +244,26 @@
                                 href="javascript:void(0);"
                                 data-bs-toggle="dropdown">
                                 <div class="avatar avatar-online">
-                                    <img src="{{asset('storage/' . auth()->user()->avatar)}}" alt="alt" class="rounded-circle" style="object-fit: cover"/>
-                                </div>
+                                    @if(isset(auth()->user()->avatar))
+                                        <div class="avatar avatar-online">
+                                            <img src="{{asset('storage/' . auth()->user()->avatar)}}" alt="alt" class="w-px-40 rounded-circle" style="object-fit: cover" />
+                                        </div>
+                                    @else
+                                        <img src="{{ asset('assets/img/user.png ') }}" alt="alt" class="w-px-40 rounded-circle" style="object-fit: cover" />
+                                    @endif                                </div>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <a class="dropdown-item" href="#">
                                         <div class="d-flex">
                                             <div class="flex-shrink-0 me-3">
-                                                <div class="avatar avatar-online">
-                                                    <img src="{{asset('storage/' . auth()->user()->avatar)}}" alt="alt" class="w-px-40 rounded-circle" style="object-fit: cover" />
-                                                </div>
+                                                @if(isset(auth()->user()->avatar))
+                                                    <div class="avatar avatar-online">
+                                                        <img src="{{asset('storage/' . auth()->user()->avatar)}}" alt="alt" class="w-px-40 rounded-circle" style="object-fit: cover" />
+                                                    </div>
+                                                @else
+                                                    <img src="{{ asset('assets/img/user.png ') }}" alt="alt" class="w-px-40 rounded-circle" style="object-fit: cover" />
+                                                @endif
                                             </div>
                                             @auth()
                                                 <div class="flex-grow-1">
@@ -260,24 +278,9 @@
                                     <div class="dropdown-divider my-1"></div>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="#">
-                                        <i class="icon-base ri ri-user-line icon-md me-3"></i>
-                                        <span>My Profile</span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">
+                                    <a class="dropdown-item" href="/profile">
                                         <i class="icon-base ri ri-settings-4-line icon-md me-3"></i>
-                                        <span>Settings</span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#">
-                        <span class="d-flex align-items-center align-middle">
-                          <i class="flex-shrink-0 icon-base ri ri-bank-card-line icon-md me-3"></i>
-                          <span class="flex-grow-1 align-middle ms-1">Billing Plan</span>
-                          <span class="flex-shrink-0 badge rounded-pill bg-danger">4</span>
-                        </span>
+                                        <span>Настройки профиля</span>
                                     </a>
                                 </li>
                                 <li>
@@ -287,6 +290,7 @@
                                     <div class="d-grid px-4 pt-2 pb-1">
                                         <form action="{{route('logout')}}" method="post">
                                             @csrf
+                                            @method('post')
                                             <button type="submit" class="btn btn-danger d-flex">
                                                 <small class="align-middle">Выйти</small>
                                                 <i class="ri ri-logout-box-r-line ms-2 ri-xs"></i>
@@ -352,5 +356,7 @@
 <script async="async" defer="defer" src="https://buttons.github.io/buttons.js"></script>
 
 
+
+@stack('scripts')
 </body>
 </html>

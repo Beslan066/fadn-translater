@@ -31,9 +31,12 @@ Route::middleware(['auth', 'region_admin'])->group(function () {
     Route::post('/region-admin/bulk-complete', [RegionAdminController::class, 'bulkComplete'])->name('region-admin.bulk-complete');
 });
 
+Route::get('/region-admin/users', [RegionAdminController::class, 'users'])->name('region-admin.users');
+
+
 Route::middleware(['auth', 'isTranslator'])->group(function () {
     Route::get('/translator', [TranslatorController::class, 'index'])->name('translator.index');
-    Route::get('/translator/translations', [TranslatorController::class, 'index'])->name('translator.translations');
+    Route::get('/translator/translations', [TranslatorController::class, 'translations'])->name('translator.translations');
     Route::get('/translator/dashboard', [TranslatorController::class, 'dashboard'])->name('translator.dashboard');
     Route::post('/translator/translate/{translation}/submit', [TranslatorController::class, 'submitTranslation'])
         ->name('translator.submit');
@@ -44,6 +47,7 @@ Route::middleware(['auth', 'isTranslator'])->group(function () {
 Route::middleware(['auth', 'isProofreader'])->group(function () {
     Route::get('/proofreader', [ProofreaderController::class, 'index'])->name('proofreader.index');
     Route::get('/proofreader/translations', [ProofreaderController::class, 'translations'])->name('proofreader.translations');
+    Route::get('/proofreader/users', [RegionAdminController::class, 'users'])->name('proofreader.users');
     Route::get('/proofreader/dashboard', [ProofreaderController::class, 'dashboard'])->name('proofreader.dashboard');
     Route::post('/proofreader/review/{translation}', [ProofreaderController::class, 'reviewTranslation'])->name('proofreader.review');
 });
@@ -53,8 +57,8 @@ Route::get('/regions/create', [RegionController::class, 'create'])->name('region
 Route::post('/regions/store', [RegionController::class, 'store'])->name('regions.store');
 Route::get('/regions/{region}/edit', [RegionController::class, 'edit'])->name('regions.edit');
 Route::patch('/regions/{region}', [RegionController::class, 'update'])->name('regions.update');
-Route::delete('/regions/{region}', [RegionController::class, 'destroy'])->name('regions.delete');
-
+Route::delete('/regions/{region}', [RegionController::class, 'destroy'])->name('regions.destroy');
+Route::get('/regions/export', [RegionController::class, 'export'])->name('regions.export');
 Route::get('/regions/search', [RegionController::class, 'search'])->name('admin.tags.search');
 
 

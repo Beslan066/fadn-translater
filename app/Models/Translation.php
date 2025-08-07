@@ -16,6 +16,7 @@ class Translation extends Model
         'sentence_id', 'region_id', 'translator_id',
         'proofreader_id', 'translated_text', 'status',
         'assigned_at', 'translated_at', 'proofread_at',
+        'reject_reason',
         'rejected_at', 'locked_at', 'locked_by'
     ];
 

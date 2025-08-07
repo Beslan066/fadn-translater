@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Region extends Model
 {
+
+    use SoftDeletes;
     protected $fillable = [
         'name',
         'code',
@@ -14,6 +17,7 @@ class Region extends Model
         'is_active',
         'translators_count',
         'proofreaders_count',
+        'deleted_by'
     ];
 
     protected $casts = [
@@ -66,7 +70,12 @@ class Region extends Model
             'assigned' => $this->translations()->where('status', Translation::STATUS_ASSIGNED)->count(),
             'translated' => $this->translations()->where('status', Translation::STATUS_TRANSLATED)->count(),
             'proofread' => $this->translations()->where('status', Translation::STATUS_PROOFREAD)->count(),
-            'published' => $this->translations()->where('status', Translation::STATUS_PUBLISHED)->count(),
+            'published' => $this->translations()->where('status', Translation::STATUS_REJECTED)->count(),
         ];
+    }
+
+    public function deletedBy()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
 }

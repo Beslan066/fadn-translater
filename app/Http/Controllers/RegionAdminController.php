@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Proofread;
+use App\Models\Region;
 use App\Models\Sentence;
 use App\Models\Translation;
 use App\Models\User;
@@ -13,7 +15,87 @@ class RegionAdminController extends Controller
 
     public function home()
     {
-        return view('pages.region-admin.index');
+
+
+        $region = Region::query()->where('id', auth()->user()->region_id)->first();
+        // Статистика по переводам
+        $translationStats = Translation::where('region_id', $region->id)
+            ->selectRaw('
+            COUNT(*) as total,
+            SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as assigned,
+            SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as translated,
+            SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as proofread,
+            SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as rejected
+        ', [
+                Translation::STATUS_ASSIGNED,
+                Translation::STATUS_TRANSLATED,
+                Translation::STATUS_PROOFREAD,
+                Translation::STATUS_REJECTED
+            ])
+            ->first();
+
+        // Активные переводчики региона
+        $translators = $region->translators()
+            ->withCount(['translations as completed_translations' => function($query) use ($region) {
+                $query->where('status', Translation::STATUS_TRANSLATED)
+                    ->where('region_id', $region->id);
+            }])
+            ->orderBy('completed_translations', 'desc')
+            ->get();
+
+        // Активные корректоры региона
+        $proofreaders = $region->proofreaders()
+            ->withCount(['proofreadByMe as completed_proofreads' => function($query) use ($region) {
+                $query->where('status', Translation::STATUS_PROOFREAD)
+                    ->where('region_id', $region->id);
+            }])
+            ->orderBy('completed_proofreads', 'desc')
+            ->get();
+
+        $translatorsCount = Region::withCount(['translators'])->get()->sum('translators_count');
+        $proofreadersCount = Region::withCount(['proofreaders'])->get()->sum('proofreaders_count');
+
+
+        // Топ корректоров и переводчиков
+        $topTranslators = User::where('role', 'translator')
+            ->withCount(['translations' => function($query) {
+                $query->where('status', Translation::STATUS_TRANSLATED);
+            }])
+            ->where('region_id', auth()->user()->region_id)
+            ->orderBy('translations_count', 'desc')
+            ->take(5)
+            ->get();
+
+        $topProofreaders = User::where('role', 'proofreader')
+            ->withCount(['proofreadByMe as proofreads_count' => function($query) {
+                $query->where('status', Translation::STATUS_PROOFREAD);
+            }])
+            ->where('region_id', auth()->user()->region_id)
+            ->orderBy('proofreads_count', 'desc')
+            ->take(5)
+            ->get();
+
+        // Неподтвержденные пользователи
+
+        $users = User::query()
+            ->where('is_active', 0)
+            ->where('region_id', auth()->user()->region_id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return view('pages.region-admin.index', [
+            'proofreadersCount' => $proofreadersCount,
+            'translatorsCount' => $translatorsCount,
+            'topTranslators' => $topTranslators,
+            'topProofreaders' => $topProofreaders,
+            'users' => $users,
+            'region' => $region,
+            'translatedTranslations' => $translationStats->translated ?? 0,
+            'completedTranslations' => $translationStats->proofread?? 0,
+            'rejectedTranslations' => $translationStats->rejected ?? 0,
+            'translators' => $translators,
+            'proofreaders' => $proofreaders,
+        ]);
     }
     public function index(Request $request)
     {
@@ -108,5 +190,67 @@ class RegionAdminController extends Controller
         });
 
         return back()->with('success', 'Выбранные предложения помечены как завершенные');
+    }
+
+    public function users(Request $request)
+    {
+        $currentRegionId = auth()->user()->region_id;
+
+        $users = User::query()
+            ->with(['region', 'translations' => function($query) use ($currentRegionId) {
+                $query->where('region_id', $currentRegionId);
+            }])
+            ->where('region_id', $currentRegionId) // Жесткая привязка к региону
+            ->whereIn('role', ['translator', 'proofreader'])
+            ->when($request->search, function($query) use ($request) {
+                $query->where(function($q) use ($request) {
+                    $q->where('name', 'like', '%'.$request->search.'%')
+                        ->orWhere('email', 'like', '%'.$request->search.'%');
+                });
+            })
+            ->when($request->status === 'active', function($query) {
+                $query->where('is_active', true)->whereNull('deleted_at');
+            })
+            ->when($request->status === 'inactive', function($query) {
+                $query->where('is_active', false)->whereNull('deleted_at');
+            })
+            ->when($request->status === 'deleted', function($query) {
+                $query->onlyTrashed();
+            })
+            ->when($request->role, function($query, $role) {
+                $query->where('role', $role);
+            })
+            // Фильтры переводов только для переводчиков
+            ->when($request->role === 'translator' && $request->translation_status, function($query) use ($request, $currentRegionId) {
+                $query->whereHas('translations', function($q) use ($request, $currentRegionId) {
+                    $q->where('status', $request->translation_status)
+                        ->where('region_id', $currentRegionId);
+                });
+            })
+            ->when($request->role === 'translator' && $request->translations_count === 'on_review', function($query) use ($currentRegionId) {
+                $query->whereHas('translations', function($q) use ($currentRegionId) {
+                    $q->where('status', Translation::STATUS_TRANSLATED)
+                        ->where('region_id', $currentRegionId);
+                });
+            })
+            ->when($request->role === 'translator' && $request->translations_count === 'approved', function($query) use ($currentRegionId) {
+                $query->whereHas('translations', function($q) use ($currentRegionId) {
+                    $q->where('status', Translation::STATUS_PROOFREAD)
+                        ->where('region_id', $currentRegionId);
+                });
+            })
+            ->when($request->role === 'translator' && $request->translations_count === 'rejected', function($query) use ($currentRegionId) {
+                $query->whereHas('translations', function($q) use ($currentRegionId) {
+                    $q->where('status', Translation::STATUS_REJECTED)
+                        ->where('region_id', $currentRegionId);
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('pages.region-admin.users', [
+            'users' => $users,
+            'filters' => $request->all(),
+        ]);
     }
 }

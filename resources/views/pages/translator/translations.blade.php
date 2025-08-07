@@ -18,24 +18,40 @@
                                                 class="icon-base ri ri-external-link-line icon-18px"></i> <span
                                                 class="d-none d-sm-inline-block">Экспорт</span></span></span></button>
                             </div>
-                            <button type="button" class="btn btn-primary dropdown-toggle waves-effect waves-light show"
-                                    data-bs-toggle="dropdown" aria-expanded="true"></i>Фильтр
-                            </button>
                         </div>
                     </div>
                 </div>
                 <hr class="my-0">
                 <div class="row m-3 mx-2 my-0 justify-content-between">
-                    <div
-                        class="d-md-flex justify-content-between align-items-center dt-layout-end col-md-auto ms-auto mb-2 mt-2">
-                        <div class="dt-search"><input type="search"
-                                                      class="form-control form-control-sm"
-                                                      id="dt-search-0"
-                                                      placeholder="Введите для поиска"
-                                                      aria-controls="DataTables_Table_0"
-                                                      style="border:1px solid #d1cfd4 !important">
+                    <form method="GET" action="{{ route('translator.translations') }}" class="w-100">
+                        <div class="row mt-2">
+                            <div class="col-md-3 mb-2">
+                                <input type="search" name="search" class="form-control form-control-sm"
+                                       placeholder="Поиск по тексту" value="{{ request('search') }}"
+                                       style="border:1px solid #d1cfd4 !important">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <select name="status" class="form-select form-select-sm">
+                                    <option value="">Все статусы</option>
+                                    <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>
+                                        На проверке
+                                    </option>
+                                    <option value="2" {{ request('status') == '2' ? 'selected' : '' }}>
+                                        Подтвержден
+                                    </option>
+                                    <option value="3" {{ request('status') == '3' ? 'selected' : '' }}>
+                                        Отклонен
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-sm btn-primary waves-effect waves-light">Применить</button>
+                                    <a href="{{ route('translator.translations') }}" class="btn btn-sm btn-outline-secondary waves-effect">Сбросить</a>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
                 <div class="justify-content-between dt-layout-table">
                     <div class="d-md-flex justify-content-between align-items-center dt-layout-full table-responsive">
@@ -61,30 +77,24 @@
                                 </th>
                                 <th data-dt-column="3" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Name: Activate to sort"
-                                    tabindex="0"><span class="dt-column-title" role="button">Регион</span><span
+                                    tabindex="0"><span class="dt-column-title" role="button">Оригинал</span><span
+                                        class="dt-column-order"></span></th>
+                                <th data-dt-column="3" rowspan="1" colspan="1"
+                                    class="dt-orderable-asc dt-orderable-desc" aria-label="Name: Activate to sort"
+                                    tabindex="0"><span class="dt-column-title" role="button">Перевод</span><span
                                         class="dt-column-order"></span></th>
                                 <th data-dt-column="4" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Email: Activate to sort"
-                                    tabindex="0"><span class="dt-column-title" role="button">Руководитель</span><span
-                                        class="dt-column-order"></span></th>
-                                <th data-dt-column="5" rowspan="1" colspan="1"
-                                    class="dt-orderable-asc dt-orderable-desc" aria-label="Date: Activate to sort"
                                     tabindex="0"><span class="dt-column-title" role="button">Переведено</span><span
                                         class="dt-column-order"></span></th>
                                 <th data-dt-column="5" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Date: Activate to sort"
-                                    tabindex="0"><span class="dt-column-title" role="button">На проверке</span><span
+                                    tabindex="0"><span class="dt-column-title" role="button">Автор</span><span
                                         class="dt-column-order"></span></th>
+
                                 <th data-dt-column="7" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort"
                                     tabindex="0"><span class="dt-column-title" role="button">Статус</span><span
-                                        class="dt-column-order"></span></th>
-                                <th data-dt-column="7" rowspan="1" colspan="1"
-                                    class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort"
-                                    tabindex="0"><span class="dt-column-title" role="button">Зарегистрирован</span><span
-                                        class="dt-column-order"></span></th>
-                                <th class="d-flex align-items-center dt-orderable-none" data-dt-column="8" rowspan="1"
-                                    colspan="1" aria-label="Actions"><span class="dt-column-title">Действие</span><span
                                         class="dt-column-order"></span></th>
                             </tr>
                             </thead>
@@ -92,42 +102,26 @@
                             @foreach($translations as $translation)
                                 <tr>
                                     <td class="dt-select">{{$translation->id}}</td>
-                                    <td>
-                                        <div class="d-flex justify-content-start align-items-center user-name">
-                                            <div class="d-flex flex-column">
-                                                <span class="emp_name text-truncate h6 mb-0">{{$translation->translated_text}}</span>
-                                            </div>
-                                        </div>
+                                    <td style="white-space: normal;">
+                                        <span class="emp_name text-truncate h6 mb-0">{{$translation->translated_text}}</span>
                                     </td>
-                                    <td>ggiacoppo2r@apache.org</td>
-                                    <td>04/15/2021</td>
-                                    <td class="dt-type-numeric">$24973.48</td>
+                                    <td style="white-space: normal;">
+                                        {{$translation->sentence->sentence }}
+                                    </td>
+                                        <td>{{$translation->created_at}}</td>
+                                    <td class="dt-type-numeric">{{$translation->translator->name}}</td>
                                     <td>
-              <span class="badge rounded-pill  bg-label-success">
-                Professional
-              </span>
+                                      <span class="badge rounded-pill  bg-label-success">
+                                        @if($translation->status === 2)
+                                              Подтвержден
+                                          @elseif($translation->status === 3)
+                                              Отклонен
+                                          @elseif($translation->status === 1)
+                                                На проверке
+                                          @endif
+                                      </span>
                                     </td>
 
-                                    <td>
-                                        {{translated_text->created_at}}
-                                    </td>
-                                    <td class="d-flex align-items-center">
-                                        <div class="d-inline-block"><a href="javascript:;"
-                                                                       class="btn btn-sm btn-text-secondary rounded-pill btn-icon dropdown-toggle hide-arrow"
-                                                                       data-bs-toggle="dropdown"><i
-                                                    class="icon-base ri ri-more-2-line icon-22px"></i></a>
-                                            <ul class="dropdown-menu dropdown-menu-end m-0">
-                                                <li><a href="javascript:;" class="dropdown-item">Details</a></li>
-                                                <li><a href="javascript:;" class="dropdown-item">Archive</a></li>
-                                                <div class="dropdown-divider"></div>
-                                                <li><a href="javascript:;"
-                                                       class="dropdown-item text-danger delete-record">Delete</a>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                        <a href="javascript:;"
-                                           class="btn btn-sm btn-text-secondary rounded-pill btn-icon item-edit"><i
-                                                class="icon-base ri ri-edit-box-line icon-22px"></i></a></td>
                                 </tr>
                             @endforeach
                             </tbody>

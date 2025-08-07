@@ -65,7 +65,7 @@
                                         class="dt-column-order"></span></th>
                                 <th data-dt-column="4" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Email: Activate to sort"
-                                    tabindex="0"><span class="dt-column-title" role="button">Руководитель</span><span
+                                    tabindex="0"><span class="dt-column-title" role="button">Оригинал</span><span
                                         class="dt-column-order"></span></th>
                                 <th data-dt-column="5" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Date: Activate to sort"
@@ -81,7 +81,7 @@
                                         class="dt-column-order"></span></th>
                                 <th data-dt-column="7" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort"
-                                    tabindex="0"><span class="dt-column-title" role="button">Зарегистрирован</span><span
+                                    tabindex="0"><span class="dt-column-title" role="button">Сообщение</span><span
                                         class="dt-column-order"></span></th>
                                 <th class="d-flex align-items-center dt-orderable-none" data-dt-column="8" rowspan="1"
                                     colspan="1" aria-label="Actions"><span class="dt-column-title">Действие</span><span
@@ -92,24 +92,27 @@
                             @foreach($translations as $translation)
                                 <tr>
                                     <td class="dt-select">{{$translation->id}}</td>
-                                    <td>
+                                    <td style="white-space: normal;">
                                         <div class="d-flex justify-content-start align-items-center user-name">
                                             <div class="d-flex flex-column">
                                                 <span class="emp_name text-truncate h6 mb-0">{{$translation->translated_text}}</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td>ggiacoppo2r@apache.org</td>
-                                    <td>04/15/2021</td>
-                                    <td class="dt-type-numeric">$24973.48</td>
+                                    <td style="white-space: normal;">{{$translation->sentence->sentence}}</td>
+                                    <td>{{$translation->created_at}}</td>
+                                    <td class="dt-type-numeric">{{$translation->translator->name}}</td>
                                     <td>
-              <span class="badge rounded-pill  bg-label-success">
-                Professional
-              </span>
+                                      <span class="badge rounded-pill  bg-label-success">
+                                        @if($translation->status === 2)
+                                              Подтвержден
+                                          @elseif($translation->status === 3)
+                                                Отклонен
+                                          @endif
+                                      </span>
                                     </td>
-
-                                    <td>
-                                        {{$translation->translated_text}}
+                                    <td style="white-space: normal;">
+                                        <p>{{$translation->reject_reason}}</p>
                                     </td>
                                     <td class="d-flex align-items-center">
                                         <div class="d-inline-block"><a href="javascript:;"
