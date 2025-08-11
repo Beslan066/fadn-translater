@@ -19,6 +19,8 @@ Route::get('/dashboard', [SentenceController::class, 'getRegionalStatistics'])->
 Route::get('/sentences', [SentenceController::class, 'index'])->name('sentences.index');
 Route::post('/sentences/upload', [SentenceController::class, 'upload'])->name('sentences.upload');
 Route::get('/sentences/random', [SentenceController::class, 'getRandomSentence']);
+Route::delete('/sentences/{sentence}', [SentenceController::class, 'destroy'])->name('sentences.destroy');
+
 Route::get('/statistics', [SentenceController::class, 'getRegionalStatistics']);
 Route::get('/translations', [SentenceController::class, 'getRegionalTranslations']);
 

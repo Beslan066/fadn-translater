@@ -98,7 +98,8 @@ class UserController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-        return response()->json($user, 201);
+        return redirect()->route('users.index')
+            ->with('success', 'Пользователь успешно создан');
     }
 
     public function show(User $user)

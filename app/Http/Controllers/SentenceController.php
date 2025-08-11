@@ -181,4 +181,11 @@ class SentenceController extends Controller
         ]);
     }
 
+    public function destroy(Sentence $sentence)
+    {
+        $sentence->delete();
+
+        return redirect()->route('sentences.index');
+    }
+
 }

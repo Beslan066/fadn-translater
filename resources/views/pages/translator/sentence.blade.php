@@ -20,7 +20,7 @@
 
                     <div class="mb-3">
                         <label class="form-label">Ваш перевод:</label>
-                        <textarea name="translated_text" class="form-control" rows="5" required
+                        <textarea name="translated_text" class="form-control" rows="5"
                         >{{ old('translated_text', $translation->translated_text ?? '') }}</textarea>
                     </div>
 

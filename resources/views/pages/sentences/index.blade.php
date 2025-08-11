@@ -45,8 +45,10 @@
                             @endif
                         </td>
                         <td>
-                            <form action="">
-                                <button type="button" class="btn btn-danger waves-effect waves-light" onclick="return confirm('Вы действительно хотите безвозвратно удалить эти данные?');">Удалить</button>
+                            <form action="{{route('sentences.destroy', $sentence->id)}}" method="post">
+                                @csrf
+                                @method('delete')
+                                <button type="submit" class="btn btn-danger waves-effect waves-light" onclick="return confirm('Вы действительно хотите безвозвратно удалить эти данные?');">Удалить</button>
                             </form>
                         </td>
                     </tr>
