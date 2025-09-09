@@ -350,35 +350,40 @@
         }
 
         // Основная функция скачивания
+        // Основная функция скачивания
         async function downloadExportFile(fileName, exportId) {
             try {
                 console.log('Starting download process for:', fileName);
 
                 showToastNotification('Подготовка', `Подготовка файла ${fileName} к скачиванию...`, 'info', 3000);
 
-                // Ждем немного чтобы файл точно был готов
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Получаем прямой URL для скачивания
+                const response = await fetch(`/download-export/${fileName}`, {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                    }
+                });
 
-                // Пробуем первый метод (iframe)
-                try {
-                    await downloadFile(fileName, exportId);
+                const data = await response.json();
+
+                if (data.download_url) {
+                    // Используем прямой URL для скачивания
+                    const link = document.createElement('a');
+                    link.href = data.download_url;
+                    link.target = '_blank';
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    // Помечаем как скачанный
+                    markAsDownloaded(exportId);
+
                     showToastNotification('Успех', `Файл ${fileName} успешно скачан.`, 'success', 5000);
-                    return;
-                } catch (error) {
-                    console.log('First download method failed, trying alternative...');
+                } else {
+                    throw new Error(data.error || 'Не удалось получить ссылку для скачивания');
                 }
-
-                // Пробуем второй метод (ссылка)
-                try {
-                    await downloadFileAlternative(fileName, exportId);
-                    showToastNotification('Успех', `Файл ${fileName} отправлен на скачивание.`, 'success', 5000);
-                    return;
-                } catch (error) {
-                    console.log('Second download method failed...');
-                }
-
-                // Если оба метода не сработали, предлагаем ручное скачивание
-                throw new Error('Автоматическое скачивание не сработало');
 
             } catch (error) {
                 console.error('Download error:', error);
@@ -468,23 +473,18 @@
                 if (!data.success) return;
 
                 // Берём завершённые экспорты
-                const completedExports = data.exports.filter(exp => exp.status === 'completed' && exp.file_exists);
+                const completedExports = data.exports.filter(exp =>
+                    exp.status === 'completed' && exp.file_exists
+                );
 
-                completedExports.forEach(exp => {
-                    const downloaded = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
-                    if (!downloaded.includes(exp.id) && exp.download_url) {
-                        // Скачиваем файл
-                        const link = document.createElement('a');
-                        link.href = exp.download_url;
-                        link.download = '';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-
-                        downloaded.push(exp.id);
-                        localStorage.setItem('downloadedExports', JSON.stringify(downloaded));
+                for (const exp of completedExports) {
+                    const downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+                    if (!downloadedExports.includes(exp.id)) {
+                        // Скачиваем файл через нашу функцию
+                        await downloadExportFile(exp.file_name, exp.id);
+                        break; // Обрабатываем по одному файлу за раз
                     }
-                });
+                }
 
             } catch (error) {
                 console.error('Ошибка проверки экспорта:', error);

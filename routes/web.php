@@ -24,11 +24,11 @@ Route::get('/sentences/random', [SentenceController::class, 'getRandomSentence']
 Route::delete('/sentences/{sentence}', [SentenceController::class, 'destroy'])->name('sentences.destroy');
 Route::post('/regions/{region}/export-sentences', [SentenceController::class, 'exportSentences'])
     ->name('regions.export-sentences');
-Route::get('/export-status', [SentenceController::class, 'checkExportStatus'])
-    ->name('export.status');
 
-Route::get('download-export/{fileName}', [SentenceController::class, 'downloadExport'])
-    ->name('export.download');
+
+Route::get('/export-status', [SentenceController::class, 'checkExportStatus'])->name('export.status');
+Route::get('/download-export/{fileName}', [SentenceController::class, 'downloadExport'])->name('export.download');
+Route::get('/download-export-direct/{fileName}', [SentenceController::class, 'downloadExportDirect'])->name('export.download.direct');
 Route::get('/statistics', [SentenceController::class, 'getRegionalStatistics']);
 Route::get('/translations', [SentenceController::class, 'getRegionalTranslations']);
 

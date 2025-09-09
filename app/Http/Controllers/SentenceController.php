@@ -369,23 +369,7 @@ class SentenceController extends Controller
 
             $filePath = storage_path("app/exports/{$fileName}");
 
-            // Если файл не существует, проверяем старые пути
-            if (!file_exists($filePath)) {
-                // Возможно файл в другой папке или был перемещен
-                $alternativePaths = [
-                    storage_path("exports/{$fileName}"),
-                    storage_path("app/{$fileName}"),
-                    storage_path("{$fileName}")
-                ];
-
-                foreach ($alternativePaths as $altPath) {
-                    if (file_exists($altPath)) {
-                        $filePath = $altPath;
-                        break;
-                    }
-                }
-            }
-
+            // Проверяем существование файла
             if (!file_exists($filePath)) {
                 // Помечаем экспорт как missing
                 $export = Export::where('file_name', $fileName)->first();
@@ -410,14 +394,55 @@ class SentenceController extends Controller
                 $export->update(['downloaded_at' => now()]);
             }
 
+            // ВАЖНО: Возвращаем редирект на прямой URL для скачивания
+            return response()->json([
+                'download_url' => route('export.download.direct', ['fileName' => $fileName]),
+                'file_name' => $fileName
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Download error: ' . $e->getMessage());
+            return response()->json(['error' => 'Ошибка скачивания файла'], 500);
+        }
+    }
+
+// Добавьте новый метод для прямого скачивания
+    public function downloadExportDirect($fileName)
+    {
+        try {
+            // Безопасная проверка имени файла
+            if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $fileName)) {
+                abort(400, 'Некорректное имя файла');
+            }
+
+            $filePath = storage_path("app/exports/{$fileName}");
+
+            if (!file_exists($filePath)) {
+                abort(404, 'Файл не найден');
+            }
+
+            // Проверяем права доступа
+            $export = Export::where('file_name', $fileName)
+                ->where('user_id', auth()->id())
+                ->first();
+
+            if (!$export && !auth()->user()->isAdmin()) {
+                abort(403, 'Доступ запрещен');
+            }
+
+            // Обновляем время скачивания
+            if ($export) {
+                $export->update(['downloaded_at' => now()]);
+            }
+
             return response()->download($filePath, $fileName, [
                 'Content-Type' => 'text/csv; charset=utf-8',
                 'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Download error: ' . $e->getMessage());
-            return response()->json(['error' => 'Ошибка скачивания файла'], 500);
+            \Log::error('Direct download error: ' . $e->getMessage());
+            abort(500, 'Ошибка скачивания файла');
         }
     }
 
