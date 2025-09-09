@@ -218,8 +218,8 @@
                             <label class="form-label">Тип предложения</label>
                             <select class="form-select" name="other_sentence" id="exportSentenceType">
                                 <option value="">Все предложения</option>
-                                <option value="1">Тип 1 (otherSentence = 1)</option>
-                                <option value="2">Тип 2 (otherSentence = 2)</option>
+                                <option value="0">Основной корпус</option>
+                                <option value="1">Дополнительный корпус</option>
                             </select>
                         </div>
 
@@ -454,50 +454,45 @@
         // Функция для проверки статуса экспорта
         async function checkExportStatus() {
             try {
-                console.log('Checking export status...');
-
-                const response = await fetch('{{ route("export.status") }}', {
+                const response = await fetch('/export-status', {
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
                     },
                     credentials: 'include'
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Export status response:', data);
+                if (!response.ok) return;
+                const data = await response.json();
 
-                    if (data.success && data.exports && data.exports.length > 0) {
-                        // Ищем завершенные экспорты с существующими файлами
-                        const completedExports = data.exports.filter(exp =>
-                            exp.status === 'completed' && exp.file_exists === true
-                        );
+                if (!data.success) return;
 
-                        if (completedExports.length > 0) {
-                            const latestExport = completedExports[0];
+                // Берём завершённые экспорты
+                const completedExports = data.exports.filter(exp => exp.status === 'completed' && exp.file_exists);
 
-                            // Проверяем, не скачивали ли уже этот файл
-                            const downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+                completedExports.forEach(exp => {
+                    const downloaded = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+                    if (!downloaded.includes(exp.id) && exp.download_url) {
+                        // Скачиваем файл
+                        const link = document.createElement('a');
+                        link.href = exp.download_url;
+                        link.download = '';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
 
-                            if (!downloadedExports.includes(latestExport.id)) {
-                                console.log('New export found, downloading:', latestExport.file_name);
-                                await downloadExportFile(latestExport.file_name, latestExport.id);
-                            }
-                        }
-
-                        // Показываем предупреждение о missing files
-                        const missingFiles = data.exports.filter(exp => exp.status === 'file_missing');
-                        if (missingFiles.length > 0) {
-                            console.warn('Missing files detected:', missingFiles);
-                        }
+                        downloaded.push(exp.id);
+                        localStorage.setItem('downloadedExports', JSON.stringify(downloaded));
                     }
-                }
+                });
+
             } catch (error) {
-                console.log('Проверка статуса:', error.message);
+                console.error('Ошибка проверки экспорта:', error);
             }
         }
+
+        // Проверка каждые 5 секунд
+        setInterval(checkExportStatus, 5000);
 
         // Функция для интенсивной проверки статуса
         function startIntensiveStatusChecking() {

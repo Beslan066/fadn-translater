@@ -329,6 +329,7 @@ class SentenceController extends Controller
                         'processed_count' => $export->processed_count,
                         'created_at' => $export->created_at->format('d.m.Y H:i'),
                         'download_url' => route('export.download', ['fileName' => $export->file_name]),
+
                         'region_id' => $export->region_id,
                     ];
                 });
