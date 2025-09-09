@@ -5,7 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Sentence extends Model
 {
@@ -18,13 +21,20 @@ class Sentence extends Model
 
     protected $fillable = [
         'sentence', 'price', 'complexity',
-        'locked_at', 'locked_by', 'delayed_until', 'status'
+        'locked_at', 'locked_by', 'delayed_until', 'status', 'otherSentence','user_id',
+        'region_id',
+        'file_name',
+        'file_size',
+        'status',
+        'processed_count',
+        'downloaded_at'
     ];
 
     protected $casts = [
         'locked_at' => 'datetime',
         'delayed_until' => 'datetime',
-        'status' => 'integer'
+        'status' => 'integer',
+        'downloaded_at' => 'datetime',
     ];
 
     public function translations(): HasMany
@@ -47,7 +57,8 @@ class Sentence extends Model
                 $q->where('region_id', $regionId)
                     ->whereIn('status', [
                         Translation::STATUS_TRANSLATED,
-                        Translation::STATUS_PROOFREAD
+                        Translation::STATUS_PROOFREAD,
+                        Translation::STATUS_COMPLETED_BY_ADMIN // Добавляем новый статус
                     ]);
             })
                 ->orWhereHas('translations', function($q) use ($regionId) {
@@ -72,7 +83,8 @@ class Sentence extends Model
             ->where('region_id', $regionId)
             ->whereIn('status', [
                 Translation::STATUS_TRANSLATED,
-                Translation::STATUS_PROOFREAD
+                Translation::STATUS_PROOFREAD,
+                Translation::STATUS_COMPLETED_BY_ADMIN // Добавляем новый статус
             ])
             ->exists();
     }
@@ -135,5 +147,74 @@ class Sentence extends Model
         return $query->with(['translationForRegion' => function($q) use ($regionId) {
             $q->where('region_id', $regionId);
         }]);
+    }
+
+    public function scopeByOtherSentence(Builder $query, ?int $type = null): Builder
+    {
+        if ($type !== null) {
+            return $query->where('otherSentence', $type);
+        }
+
+        return $query;
+    }
+
+    public function exportSentences(Region $region, Request $request): StreamedResponse
+    {
+        $request->validate([
+            'other_sentence' => 'nullable|in:1,2'
+        ]);
+
+        $otherSentence = $request->input('other_sentence');
+
+        $fileName = 'corpus_region_' . $region->id . '_' . ($otherSentence ? 'type_' . $otherSentence . '_' : '') . now()->format('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+        ];
+
+        return Response::stream(function () use ($region, $otherSentence) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, [
+                'ID', 'Предложение', 'Перевод', 'Автор перевода',
+                'Тип предложения', 'Статус перевода', 'Дата создания'
+            ], ';');
+
+            // Используем join для оптимальной производительности
+            $query = Translation::select([
+                'translations.*',
+                'sentences.sentence as original_sentence',
+                'sentences.otherSentence',
+                'users.name as translator_name'
+            ])
+                ->join('sentences', 'translations.sentence_id', '=', 'sentences.id')
+                ->leftJoin('users', 'translations.translator_id', '=', 'users.id')
+                ->where('translations.region_id', $region->id);
+
+            if ($otherSentence) {
+                $query->where('sentences.otherSentence', $otherSentence);
+            }
+
+            $query->orderBy('translations.sentence_id')->chunk(5000, function ($translations) use ($handle) {
+                foreach ($translations as $translation) {
+                    fputcsv($handle, [
+                        $translation->sentence_id,
+                        $translation->original_sentence,
+                        $translation->translated_text,
+                        $translation->translator_name ?? 'Не назначен',
+                        $translation->otherSentence,
+                        $this->getStatusText($translation->status),
+                        $translation->created_at->format('Y-m-d H:i:s')
+                    ], ';');
+                }
+
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+            });
+
+            fclose($handle);
+        }, 200, $headers);
     }
 }

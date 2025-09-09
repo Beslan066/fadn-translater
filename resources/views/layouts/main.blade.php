@@ -43,6 +43,7 @@
     <!-- endbuild -->
 
     <link rel="stylesheet" href="{{asset('assets/vendor/libs/apex-charts/apex-charts.css')}}" />
+    @stack('styles')
 
 
     <!-- Page CSS -->
@@ -97,8 +98,15 @@
                         </li>
                         <li class="menu-item">
                             <a href="{{route('region-admin.sentences')}}" class="menu-link">
-                                <i class="menu-icon icon-base ri ri-check-fill"></i>
-                                <div data-i18n="Icons">Переводы</div>
+                                <i class="menu-icon icon-base ri ri-list-view"></i>
+                                <div data-i18n="Icons">Корпус</div>
+                            </a>
+                        </li>
+
+                        <li class="menu-item">
+                            <a href="{{route('region-admin.otherSentences')}}" class="menu-link">
+                                <i class="menu-icon icon-base ri ri-list-view"></i>
+                                <div data-i18n="Icons">Доп Корпус</div>
                             </a>
                         </li>
                         <li class="menu-item">
@@ -155,6 +163,13 @@
                                 <div data-i18n="User interface">Корпус</div>
                             </a>
 
+                        </li>
+
+                        <li class="menu-item">
+                            <a href="{{route('otherSentences.index')}}" class="menu-link">
+                                <i class="menu-icon icon-base ri ri-list-view"></i>
+                                <div data-i18n="Icons">Доп Корпус</div>
+                            </a>
                         </li>
 
                         <!-- Icons -->

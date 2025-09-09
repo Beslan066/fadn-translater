@@ -11,6 +11,7 @@ class Translation extends Model
     const STATUS_TRANSLATED = 1;
     const STATUS_PROOFREAD = 2;
     const STATUS_REJECTED = 3;
+    const STATUS_COMPLETED_BY_ADMIN = 4;
 
     protected $fillable = [
         'sentence_id', 'region_id', 'translator_id',

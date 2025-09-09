@@ -97,67 +97,115 @@ class RegionAdminController extends Controller
             'proofreaders' => $proofreaders,
         ]);
     }
+
     public function index(Request $request)
     {
         $user = auth()->user();
         $regionId = $user->region_id;
 
+        $request->validate([
+            'limit' => 'nullable|integer|min:1|max:50'
+        ]);
+
         $query = Sentence::query()
             ->with(['translationForRegion' => function($q) use ($regionId) {
                 $q->where('region_id', $regionId);
-            }])
-            ->with('translations')
-            ->when($request->search, function($q) use ($request) {
-                $q->where('sentence', 'like', '%'.$request->search.'%');
+            }]);
+
+        // УЛУЧШЕННЫЙ ПОИСК
+        if ($request->search) {
+            $searchTerm = trim($request->search);
+
+            // Чистим поисковый запрос
+            $searchTerm = preg_replace('/\s+/', ' ', $searchTerm); // Заменяем множественные пробелы на один
+            $searchTerm = preg_replace('/[^\p{L}\p{N}\s]/u', '', $searchTerm); // Убираем спецсимволы
+
+            // Разбиваем на слова
+            $words = explode(' ', $searchTerm);
+            $words = array_filter($words, function($word) {
+                return mb_strlen(trim($word)) > 2; // Ищем слова длиннее 2 символов
             });
 
-        $sentences = $query->paginate(50);
+            if (!empty($words)) {
+                $query->where(function($q) use ($words) {
+                    foreach ($words as $word) {
+                        $cleanWord = trim($word);
+                        if (!empty($cleanWord)) {
+                            $q->orWhere('sentence', 'LIKE', '%' . $cleanWord . '%');
+                        }
+                    }
+                });
+            }
+        }
+
+        if ($request->status) {
+            $query->whereHas('translationForRegion', function($q) use ($request, $regionId) {
+                $q->where('region_id', $regionId)
+                    ->where('status', $request->status);
+            });
+        }
+
+        $limit = min($request->limit ?? 20, 50);
+        $sentences = $query->paginate($limit);
 
         return view('pages.region-admin.sentences', [
             'sentences' => $sentences,
-            'statuses' => [
-                'proofread' => Translation::STATUS_PROOFREAD, // 2
-                'translated' => Translation::STATUS_TRANSLATED // 1
-            ]
+            'translationStatuses' => [
+                'proofread' => \App\Models\Translation::STATUS_PROOFREAD,
+                'translated' => \App\Models\Translation::STATUS_TRANSLATED,
+                'completed_by_admin' => \App\Models\Translation::STATUS_COMPLETED_BY_ADMIN,
+                'assigned' => \App\Models\Translation::STATUS_ASSIGNED,
+                'rejected' => \App\Models\Translation::STATUS_REJECTED
+            ],
+            'filters' => $request->all(),
+            'currentLimit' => $limit
         ]);
     }
-
     public function markAsCompleted(Request $request)
     {
         $request->validate([
-            'sentence_id' => 'required|exists:sentences,id',
-            'status' => 'required|in:completed,available'
+            'sentence_id' => 'required|exists:sentences,id'
+        ]);
+
+        $user = auth()->user();
+        $regionId = $user->region_id;
+
+        DB::transaction(function () use ($request, $regionId, $user) {
+            Translation::updateOrCreate(
+                [
+                    'sentence_id' => $request->sentence_id,
+                    'region_id' => $regionId
+                ],
+                [
+                    'status' => Translation::STATUS_COMPLETED_BY_ADMIN,
+                    'proofreader_id' => $user->id,
+                    'proofread_at' => now(),
+                    'translated_text' => 'Помечено администратором как завершенное',
+                    'locked_by' => null,
+                    'locked_at' => null
+                ]
+            );
+        });
+
+        return back()->with('success', 'Предложение помечено как завершенное');
+    }
+
+    public function markAsAvailable(Request $request)
+    {
+        $request->validate([
+            'sentence_id' => 'required|exists:sentences,id'
         ]);
 
         $user = auth()->user();
         $regionId = $user->region_id;
 
         DB::transaction(function () use ($request, $regionId) {
-            if ($request->status === 'completed') {
-                // Помечаем как переведенное
-                Translation::updateOrCreate(
-                    [
-                        'sentence_id' => $request->sentence_id,
-                        'region_id' => $regionId
-                    ],
-                    [
-                        'status' => Translation::STATUS_PROOFREAD,
-                        'proofreader_id' => auth()->id(),
-                        'proofread_at' => now(),
-                        'translated_text' => 'Помечено администратором как завершенное',
-                        'locked_by' => null,
-                        'locked_at' => null
-                    ]
-                );
-            } else {
-                // Возвращаем в доступные
-                Translation::where('sentence_id', $request->sentence_id)
-                    ->where('region_id', $regionId)
-                    ->delete();
-            }
+            Translation::where('sentence_id', $request->sentence_id)
+                ->where('region_id', $regionId)
+                ->delete();
         });
 
-        return back()->with('success', 'Статус предложения обновлен');
+        return back()->with('success', 'Предложение снова доступно для перевода');
     }
 
     public function bulkComplete(Request $request)
@@ -170,7 +218,7 @@ class RegionAdminController extends Controller
         $user = auth()->user();
         $regionId = $user->region_id;
 
-        DB::transaction(function () use ($request, $regionId) {
+        DB::transaction(function () use ($request, $regionId, $user) {
             foreach ($request->sentence_ids as $sentenceId) {
                 Translation::updateOrCreate(
                     [
@@ -178,8 +226,8 @@ class RegionAdminController extends Controller
                         'region_id' => $regionId
                     ],
                     [
-                        'status' => Translation::STATUS_PROOFREAD,
-                        'proofreader_id' => auth()->id(),
+                        'status' => Translation::STATUS_COMPLETED_BY_ADMIN,
+                        'proofreader_id' => $user->id,
                         'proofread_at' => now(),
                         'translated_text' => 'Помечено администратором как завершенное',
                         'locked_by' => null,
@@ -191,6 +239,26 @@ class RegionAdminController extends Controller
 
         return back()->with('success', 'Выбранные предложения помечены как завершенные');
     }
+
+    public function bulkMakeAvailable(Request $request)
+    {
+        $request->validate([
+            'sentence_ids' => 'required|array',
+            'sentence_ids.*' => 'exists:sentences,id'
+        ]);
+
+        $user = auth()->user();
+        $regionId = $user->region_id;
+
+        DB::transaction(function () use ($request, $regionId) {
+            Translation::whereIn('sentence_id', $request->sentence_ids)
+                ->where('region_id', $regionId)
+                ->delete();
+        });
+
+        return back()->with('success', 'Выбранные предложения снова доступны для перевода');
+    }
+
 
     public function users(Request $request)
     {

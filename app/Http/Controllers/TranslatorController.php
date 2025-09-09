@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class TranslatorController extends Controller
 {
-
     public function index() {
 
         $translations = auth()->user()->translations()->get();

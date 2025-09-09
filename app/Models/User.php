@@ -69,6 +69,12 @@ class User extends Authenticatable
         return $this->belongsTo(Region::class);
     }
 
+
+    public function isAdmin()
+    {
+        return $this->role === 'super_admin'; // Или ваша логика проверки админа
+    }
+
     public function translations(): HasMany
     {
         return $this->hasMany(Translation::class, 'translator_id');
