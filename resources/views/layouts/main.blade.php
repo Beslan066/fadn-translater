@@ -207,7 +207,7 @@
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="javascript:void(0);" class="menu-link">
+                        <a href="{{route('queue.dashboard')}}" class="menu-link">
                             <i class="menu-icon icon-base ri ri-settings-2-line"></i>
                             <div data-i18n="Form Elements">Настройки</div>
                         </a>

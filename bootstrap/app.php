@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'can.register' => \App\Http\Middleware\CanRegister::class,
             'checkRole' =>  \App\Http\Middleware\CheckRole::class,
+            'logJobMiddleware' =>  \App\Http\Middleware\LogJobMiddleware::class,
         ]);
         $middleware->alias([
             'isTranslator' => \App\Http\Middleware\RoleTranslator::class,

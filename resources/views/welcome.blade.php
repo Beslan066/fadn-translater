@@ -218,7 +218,9 @@
                                         <div class="d-flex align-items-center gap-1 mb-1">
                                             <h6 class="mb-0">{{$user->name}}</h6>
                                         </div>
-                                        <p class="mb-0">{{$user->region->name}}</p>
+                                        @if(isset($user->region->name))
+                                            <p class="mb-0">{{$user->region->name}}</p>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="text-end">

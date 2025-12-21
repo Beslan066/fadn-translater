@@ -3,6 +3,7 @@
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProofreaderController;
+use App\Http\Controllers\QueueController;
 use App\Http\Controllers\RegionAdminController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\SentenceController;
@@ -12,25 +13,41 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', [HomeController::class, 'index'])->name('home')->middleware(['auth', 'verified', 'home']);
 
-Route::get('/dashboard', [SentenceController::class, 'getRegionalStatistics'])->name('dashboard');
+Route::group(['middleware' => ['auth', 'verified', 'home'], 'prefix' => 'queue'], function () {
+    Route::get('/', [QueueController::class, 'dashboard'])->name('queue.dashboard');
+    Route::post('/start', [QueueController::class, 'startWorker'])->name('queue.start');
+    Route::post('/stop', [QueueController::class, 'stopWorker'])->name('queue.stop');
+    Route::post('/restart', [QueueController::class, 'restartWorker'])->name('queue.restart');
+    Route::get('/status', [QueueController::class, 'getStatus'])->name('queue.status');
+    Route::get('/logs', [QueueController::class, 'getLogs'])->name('queue.logs');
+    Route::get('/logs/{id}', [QueueController::class, 'getLogDetails'])->name('queue.logs.details');
+    Route::post('/clear', [QueueController::class, 'clearQueue'])->name('queue.clear');
+    Route::post('/retry', [QueueController::class, 'retryFailedJobs'])->name('queue.retry');
+});
 
-Route::get('/sentences', [SentenceController::class, 'index'])->name('sentences.index');
-Route::get('/other-sentences', [SentenceController::class, 'otherSentences'])->name('otherSentences.index');
-Route::post('/sentences/upload', [SentenceController::class, 'upload'])->name('sentences.upload');
-Route::post('/other-sentences/upload', [SentenceController::class, 'otherSentencesUpload'])->name('otherSentencesUpload');
-Route::get('/sentences/random', [SentenceController::class, 'getRandomSentence']);
-Route::delete('/sentences/{sentence}', [SentenceController::class, 'destroy'])->name('sentences.destroy');
-Route::post('/regions/{region}/export-sentences', [SentenceController::class, 'exportSentences'])
-    ->name('regions.export-sentences');
+Route::get('/', [HomeController::class, 'index'])->middleware(['auth', 'verified', 'home'])->name('home');
 
 
-Route::get('/export-status', [SentenceController::class, 'checkExportStatus'])->name('export.status');
-Route::get('/download-export/{fileName}', [SentenceController::class, 'downloadExport'])->name('export.download');
-Route::get('/download-export-direct/{fileName}', [SentenceController::class, 'downloadExportDirect'])->name('export.download.direct');
-Route::get('/statistics', [SentenceController::class, 'getRegionalStatistics']);
-Route::get('/translations', [SentenceController::class, 'getRegionalTranslations']);
+Route::group(['middleware' => 'home'], function () {
+    Route::get('/dashboard', [SentenceController::class, 'getRegionalStatistics'])->name('dashboard');
+
+    Route::get('/sentences', [SentenceController::class, 'index'])->name('sentences.index');
+    Route::get('/other-sentences', [SentenceController::class, 'otherSentences'])->name('otherSentences.index');
+    Route::post('/sentences/upload', [SentenceController::class, 'upload'])->name('sentences.upload');
+    Route::post('/other-sentences/upload', [SentenceController::class, 'otherSentencesUpload'])->name('otherSentencesUpload');
+    Route::get('/sentences/random', [SentenceController::class, 'getRandomSentence']);
+    Route::delete('/sentences/{sentence}', [SentenceController::class, 'destroy'])->name('sentences.destroy');
+    Route::post('/regions/{region}/export-sentences', [SentenceController::class, 'exportSentences'])
+        ->name('regions.export-sentences');
+
+
+    Route::get('/export-status', [SentenceController::class, 'checkExportStatus'])->name('export.status');
+    Route::get('/download-export/{fileName}', [SentenceController::class, 'downloadExport'])->name('export.download');
+    Route::get('/download-export-direct/{fileName}', [SentenceController::class, 'downloadExportDirect'])->name('export.download.direct');
+    Route::get('/statistics', [SentenceController::class, 'getRegionalStatistics']);
+    Route::get('/translations', [SentenceController::class, 'getRegionalTranslations']);
+});
 
 
 

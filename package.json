@@ -24,6 +24,7 @@
         "vite": "^6.2.4"
     },
     "dependencies": {
-        "@mdi/font": "^7.4.47"
+        "@mdi/font": "^7.4.47",
+        "toastr": "^2.1.4"
     }
 }
