@@ -39,6 +39,7 @@ class QueueManagerService
                 '--tries=3',
                 '--timeout=3600',
                 '--memory=256',
+                '--stop-when-empty',
             ];
 
             // Добавляем дополнительные опции
@@ -57,7 +58,7 @@ class QueueManagerService
                     'pid' => $process->id(),
                     'last_heartbeat' => now(),
                     'options' => $options,
-                    'processed_jobs' => 0, // Инициализируем счетчик
+                    'processed_jobs' => 0,
                     'failed_jobs' => 0,
                 ]
             );
@@ -88,14 +89,39 @@ class QueueManagerService
 
             // Отправляем сигнал остановки
             if ($worker->pid) {
-                if (PHP_OS_FAMILY === 'Windows') {
-                    exec("taskkill /PID {$worker->pid} /F");
+                // Определяем ОС более надежным способом
+                $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+                if ($isWindows) {
+                    // Для Windows
+                    exec("taskkill /PID {$worker->pid} /F 2>&1", $output, $returnCode);
+                    Log::info("Windows kill command executed", [
+                        'pid' => $worker->pid,
+                        'output' => $output,
+                        'return_code' => $returnCode
+                    ]);
                 } else {
                     // Для Linux/Unix систем
-                    if (function_exists('posix_kill')) {
-                        posix_kill($worker->pid, SIGTERM);
-                    } else {
-                        exec("kill {$worker->pid}");
+
+                    // Сначала пытаемся мягко остановить (SIGTERM = 15)
+                    exec("kill {$worker->pid} 2>&1", $output, $returnCode);
+                    Log::info("Unix kill command executed", [
+                        'pid' => $worker->pid,
+                        'output' => $output,
+                        'return_code' => $returnCode
+                    ]);
+
+                    // Ждем немного
+                    sleep(2);
+
+                    // Если процесс все еще жив, принудительно завершаем (SIGKILL = 9)
+                    if ($this->isPidAlive($worker->pid)) {
+                        exec("kill -9 {$worker->pid} 2>&1", $output, $returnCode);
+                        Log::info("Unix kill -9 command executed", [
+                            'pid' => $worker->pid,
+                            'output' => $output,
+                            'return_code' => $returnCode
+                        ]);
                     }
                 }
             }
@@ -119,10 +145,28 @@ class QueueManagerService
         }
     }
 
+    private function isPidAlive($pid): bool
+    {
+        if (!$pid) {
+            return false;
+        }
+
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+        if ($isWindows) {
+            $output = shell_exec("tasklist /FI \"PID eq {$pid}\" 2>NUL");
+            return $output && str_contains($output, (string)$pid);
+        }
+
+        // Для Linux/Unix
+        $output = shell_exec("ps -p {$pid} 2>&1");
+        return $output && str_contains($output, (string)$pid);
+    }
+
     public function restartWorker(string $queue = 'default'): bool
     {
         $this->stopWorker($queue);
-        sleep(2); // Даем время на завершение
+        sleep(3); // Даем больше времени на завершение
         return $this->startWorker($queue);
     }
 
@@ -148,7 +192,8 @@ class QueueManagerService
             return false;
         }
 
-        return true;
+        // Дополнительная проверка через систему
+        return $this->isPidAlive($worker->pid);
     }
 
     public function getWorkerStatus(string $queue = 'default'): array
@@ -167,7 +212,6 @@ class QueueManagerService
 
         $isRunning = $this->isWorkerRunning($queue);
 
-        // Безопасно получаем значения полей
         return [
             'status' => $worker->status ?? 'stopped',
             'running' => $isRunning,
