@@ -39,4 +39,13 @@
             </x-primary-button>
         </div>
     </form>
+
+    <div class="flex mt-2">
+        <p>Еще нет аккаунта?</p>
+        <div class="cursor-pointer">
+            <a href="{{route('register')}}" style="text-decoration: underline; margin-left: 10px">
+                Зарегистрироваться
+            </a>
+        </div>
+    </div>
 </x-guest-layout>
