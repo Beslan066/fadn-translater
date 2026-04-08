@@ -69,4 +69,19 @@ class HomeController extends Controller
             'authUser' => $authUser,
         ]);
     }
+
+    public function documents()
+    {
+        return view('pages.documents');
+    }
+
+    public function privacyPolicy()
+    {
+        return view('pages.privacy-policy');
+    }
+
+    public function soglasie()
+    {
+        return view('pages.soglasie');
+    }
 }

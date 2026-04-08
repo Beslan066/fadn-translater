@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 
+Route::get('/privacy-policy', [HomeController::class, 'privacyPolicy'])->name('privacyPolicy');
+Route::get('/soglasie-na-obrabotku-personalnykh-dannykh', [HomeController::class, 'soglasie'])->name('soglasie');
+
 Route::group(['middleware' => ['auth', 'verified', 'home'], 'prefix' => 'queue'], function () {
     Route::get('/', [QueueController::class, 'dashboard'])->name('queue.dashboard');
     Route::post('/start', [QueueController::class, 'startWorker'])->name('queue.start');
@@ -24,6 +27,7 @@ Route::group(['middleware' => ['auth', 'verified', 'home'], 'prefix' => 'queue']
     Route::get('/logs/{id}', [QueueController::class, 'getLogDetails'])->name('queue.logs.details');
     Route::post('/clear', [QueueController::class, 'clearQueue'])->name('queue.clear');
     Route::post('/retry', [QueueController::class, 'retryFailedJobs'])->name('queue.retry');
+
 });
 
 Route::get('/', [HomeController::class, 'index'])->middleware(['auth', 'verified', 'home'])->name('home');
@@ -47,6 +51,10 @@ Route::group(['middleware' => 'home'], function () {
     Route::get('/download-export-direct/{fileName}', [SentenceController::class, 'downloadExportDirect'])->name('export.download.direct');
     Route::get('/statistics', [SentenceController::class, 'getRegionalStatistics']);
     Route::get('/translations', [SentenceController::class, 'getRegionalTranslations']);
+
+
+    Route::get('/documents', [HomeController::class, 'documents'])->name('documents');
+
 });
 
 

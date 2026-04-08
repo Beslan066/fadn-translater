@@ -84,5 +84,10 @@
                 {{ __('Зарегистрироваться') }}
             </x-primary-button>
         </div>
+
+        <div class="mb-4; text-[12px]">
+            Нажимая "Зарегистрироваться" вы подтверждаете, что соглашаетесь с <a href="/privacy-policy" style="text-decoration: underline;">Политикой конфиденциальности</a> и
+            <a href="/soglasie-na-obrabotku-personalnykh-dannykh" style="text-decoration: underline;">обработкой персональных данных</a>
+        </div>
     </form>
 </x-guest-layout>

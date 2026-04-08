@@ -213,6 +213,12 @@
                         </a>
                     </li>
                     <li class="menu-item">
+                        <a href="{{route('documents')}}" class="menu-link">
+                            <i class="menu-icon icon-base ri ri-briefcase-2-line"></i>
+                            <div data-i18n="Form Elements">Документы</div>
+                        </a>
+                    </li>
+                    <li class="menu-item">
                         <a href="{{route('logout')}}" class="menu-link">
                             <i class="menu-icon icon-base ri ri-logout-box-line"></i>
                             <div data-i18n="Form Elements">Выйти</div>
