@@ -12,8 +12,7 @@
                         <input type="search" name="search" value="{{ request('search') }}"
                                class="form-control form-control-sm"
                                placeholder="Введите слово или фразу для поиска"
-                               style="width: 300px;"
-                               required>
+                               style="width: 300px;">
                     </div>
 
                     <select name="status" class="form-select form-select-sm" style="width: 200px;">
@@ -75,9 +74,6 @@
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="deselectAll()">
                         Снять выделение
                     </button>
-                </div>
-                <div>
-                    {{ $sentences->appends(request()->query())->links() }}
                 </div>
             </div>
 
@@ -157,7 +153,7 @@
             </div>
 
             <div class="card-footer">
-                {{ $sentences->appends(request()->query())->links() }}
+                {{ $sentences->appends(request()->query())->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>

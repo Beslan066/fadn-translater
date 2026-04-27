@@ -30,7 +30,7 @@ Route::group(['middleware' => ['auth', 'verified', 'home'], 'prefix' => 'queue']
 
 });
 
-Route::get('/', [HomeController::class, 'index'])->middleware(['auth', 'verified', 'home'])->name('home');
+Route::get('/', [HomeController::class, 'index'])->middleware(['auth', 'verified', 'home', 'checkRole'])->name('home');
 
 
 Route::group(['middleware' => 'home'], function () {
