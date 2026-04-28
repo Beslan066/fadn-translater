@@ -102,6 +102,12 @@
                                 <div data-i18n="Icons">Корпус</div>
                             </a>
                         </li>
+                        <li class="menu-item">
+                            <a href="{{route('region-admin.all-translations')}}" class="menu-link">
+                                <i class="menu-icon icon-base ri ri-file-copy-line"></i>
+                                <div data-i18n="Icons">Все переводы</div>
+                            </a>
+                        </li>
 
                         <li class="menu-item">
                             <a href="{{route('region-admin.otherSentences')}}" class="menu-link">

@@ -30,7 +30,7 @@ Route::group(['middleware' => ['auth', 'verified', 'home'], 'prefix' => 'queue']
 
 });
 
-Route::get('/', [HomeController::class, 'index'])->middleware(['auth', 'verified', 'home', 'checkRole'])->name('home');
+Route::get('/', [HomeController::class, 'index'])->middleware(['auth', 'verified', 'home'])->name('home');
 
 
 Route::group(['middleware' => 'home'], function () {
@@ -61,6 +61,7 @@ Route::group(['middleware' => 'home'], function () {
 
 Route::middleware(['auth', 'region_admin'])->group(function () {
     Route::get('/region-admin', [RegionAdminController::class, 'home'])->name('region-admin.index');
+    Route::get('/region-admin/all-translations', [RegionAdminController::class, 'allTranslations'])->name('region-admin.all-translations');
     Route::get('/region-admin/sentences', [RegionAdminController::class, 'index'])->name('region-admin.sentences');
     Route::get('/region-admin/other-sentences', [RegionAdminController::class, 'index'])->name('region-admin.otherSentences');
     Route::post('/region-admin/mark-completed', [RegionAdminController::class, 'markAsCompleted'])->name('region-admin.mark-completed');

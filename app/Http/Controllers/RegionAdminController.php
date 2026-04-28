@@ -161,6 +161,110 @@ class RegionAdminController extends Controller
             'currentLimit' => $limit
         ]);
     }
+
+    public function allTranslations(Request $request)
+    {
+        $user = auth()->user();
+        $regionId = $user->region_id;
+        $region = Region::find($regionId);
+
+        $request->validate([
+            'limit' => 'nullable|integer|min:1|max:100'
+        ]);
+
+        $query = Translation::query()
+            ->with(['sentence', 'translator', 'proofreader'])
+            ->where('region_id', $regionId);
+
+        // Фильтр по статусу
+        if ($request->status !== null && $request->status !== '') {
+            $query->where('status', (int) $request->status);
+        }
+
+        // Фильтр по исполнителю (переводчику или корректору)
+        if ($request->assigned_to) {
+            $query->where(function($q) use ($request) {
+                $q->where('translator_id', $request->assigned_to)
+                    ->orWhere('proofreader_id', $request->assigned_to);
+            });
+        }
+
+        // Поиск по тексту предложения или перевода
+        if ($request->search) {
+            $searchTerm = '%' . addcslashes($request->search, '%_') . '%';
+            $query->where(function($q) use ($searchTerm) {
+                $q->whereHas('sentence', function($q2) use ($searchTerm) {
+                    $q2->where('sentence', 'LIKE', $searchTerm);
+                })->orWhere('translated_text', 'LIKE', $searchTerm);
+            });
+        }
+
+        // Фильтр по дате
+        if ($request->date_from) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->date_to) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $limit = min($request->limit ?? 30, 100);
+        $translations = $query->orderBy('created_at', 'desc')->paginate($limit);
+
+        // Получаем список пользователей региона для фильтра
+        $users = User::where('region_id', $regionId)
+            ->whereIn('role', ['translator', 'proofreader'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'role']);
+
+        // Статистика по статусам
+        $stats = [
+            'total' => Translation::where('region_id', $regionId)->count(),
+            Translation::STATUS_ASSIGNED => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_ASSIGNED)->count(),
+            Translation::STATUS_TRANSLATED => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_TRANSLATED)->count(),
+            Translation::STATUS_PROOFREAD => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_PROOFREAD)->count(),
+            Translation::STATUS_REJECTED => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_REJECTED)->count(),
+            Translation::STATUS_COMPLETED_BY_ADMIN => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_COMPLETED_BY_ADMIN)->count(),
+        ];
+
+        // Кросс-платформенный расчет среднего времени перевода
+        $avgTime = null;
+        $translationsWithTime = Translation::where('region_id', $regionId)
+            ->whereNotNull('translated_at')
+            ->whereNotNull('assigned_at')
+            ->get(['assigned_at', 'translated_at']);
+
+        if ($translationsWithTime->count() > 0) {
+            $totalHours = 0;
+            foreach ($translationsWithTime as $trans) {
+                $totalHours += $trans->assigned_at->diffInHours($trans->translated_at);
+            }
+            $avgTime = round($totalHours / $translationsWithTime->count(), 1);
+        }
+
+        return view('pages.region-admin.all-translations', [
+            'translations' => $translations,
+            'filters' => $request->all(),
+            'currentLimit' => $limit,
+            'users' => $users,
+            'stats' => $stats,
+            'region' => $region,
+            'avgTime' => $avgTime,
+            'statuses' => [
+                Translation::STATUS_ASSIGNED => 'Назначен',
+                Translation::STATUS_TRANSLATED => 'Переведен (ждет проверки)',
+                Translation::STATUS_PROOFREAD => 'Проверен',
+                Translation::STATUS_REJECTED => 'Отклонен',
+                Translation::STATUS_COMPLETED_BY_ADMIN => 'Завершен админом',
+            ],
+            'statusColors' => [
+                Translation::STATUS_ASSIGNED => 'secondary',
+                Translation::STATUS_TRANSLATED => 'warning',
+                Translation::STATUS_PROOFREAD => 'success',
+                Translation::STATUS_REJECTED => 'danger',
+                Translation::STATUS_COMPLETED_BY_ADMIN => 'info',
+            ]
+        ]);
+    }
     public function markAsCompleted(Request $request)
     {
         $request->validate([
