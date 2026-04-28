@@ -53,9 +53,9 @@ Route::group(['middleware' => 'home'], function () {
     Route::get('/translations', [SentenceController::class, 'getRegionalTranslations']);
 
 
-    Route::get('/documents', [HomeController::class, 'documents'])->name('documents');
-
 });
+
+Route::get('/documents', [HomeController::class, 'documents'])->name('documents')->middleware('auth');
 
 
 
