@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\PendingRegistrationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProofreaderController;
@@ -16,6 +17,10 @@ use Inertia\Inertia;
 
 Route::get('/privacy-policy', [HomeController::class, 'privacyPolicy'])->name('privacyPolicy');
 Route::get('/soglasie-na-obrabotku-personalnykh-dannykh', [HomeController::class, 'soglasie'])->name('soglasie');
+
+
+Route::get('/registration-pending', [PendingRegistrationController::class, 'index'])
+    ->name('registration.pending');
 
 Route::group(['middleware' => ['auth', 'verified', 'home'], 'prefix' => 'queue'], function () {
     Route::get('/', [QueueController::class, 'dashboard'])->name('queue.dashboard');
