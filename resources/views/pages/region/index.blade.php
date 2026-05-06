@@ -218,8 +218,8 @@
                             <label class="form-label">Тип предложения</label>
                             <select class="form-select" name="other_sentence" id="exportSentenceType">
                                 <option value="">Все предложения</option>
-                                <option value="0">Основной корпус</option>
-                                <option value="1">Дополнительный корпус</option>
+                                <option value="0">Основной корпус</option>  <!-- было value="0" -->
+                                <option value="1">Дополнительный корпус</option>  <!-- было value="1" -->
                             </select>
                         </div>
 
@@ -618,6 +618,54 @@
             // Первая проверка через 5 секунд после загрузки
             setTimeout(checkExportStatus, 5000);
         });
+
+        function showDownloadButton(fileName, exportId) {
+            // Создаем фиксированную кнопку скачивания
+            let downloadBtn = document.getElementById('floating-download-btn');
+            if (!downloadBtn) {
+                downloadBtn = document.createElement('div');
+                downloadBtn.id = 'floating-download-btn';
+                downloadBtn.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+        `;
+                downloadBtn.innerHTML = `
+            <i class="ri-download-line"></i>
+            <span>Скачать файл экспорта</span>
+        `;
+                document.body.appendChild(downloadBtn);
+
+                downloadBtn.onclick = function() {
+                    window.location.href = `/download-export/${fileName}`;
+                    downloadBtn.style.display = 'none';
+                    markAsDownloaded(exportId);
+                };
+            } else {
+                downloadBtn.onclick = function() {
+                    window.location.href = `/download-export/${fileName}`;
+                    downloadBtn.style.display = 'none';
+                    markAsDownloaded(exportId);
+                };
+            }
+            downloadBtn.style.display = 'flex';
+
+            // Автоматически скрываем через 30 секунд
+            setTimeout(() => {
+                if (downloadBtn) downloadBtn.style.display = 'none';
+            }, 30000);
+        }
     </script>
 @endpush
 

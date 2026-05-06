@@ -277,14 +277,14 @@ class SentenceController extends Controller
     public function exportSentences(Region $region, Request $request): JsonResponse
     {
         $request->validate([
-            'other_sentence' => 'nullable|in:1,2'
+            'other_sentence' => 'nullable|in:0,1' // Измените с 1,2 на 0,1
         ]);
 
         try {
             ExportRegionSentencesJob::dispatch(
                 $region->id,
                 auth()->id(),
-                $request->input('other_sentence')
+                $request->input('other_sentence') !== '' ? (int)$request->input('other_sentence') : null
             );
 
             return response()->json([
