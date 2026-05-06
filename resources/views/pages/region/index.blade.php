@@ -245,10 +245,12 @@
 @endsection
 
 @push('scripts')
+    // Полностью замените скрипт на странице регионов на этот:
+
     <script>
         // Глобальные переменные
-        let currentExportId = null;
         let intensiveCheckInterval = null;
+        let isDownloading = false;
 
         // Функция для показа уведомлений
         function showToastNotification(title, message, type = 'info', delay = 5000) {
@@ -266,291 +268,193 @@
             </div>
         `;
 
-            const container = document.getElementById('notifications-container') || document.body;
+            const container = document.getElementById('notifications-container');
             const toastElement = document.createElement('div');
             toastElement.innerHTML = toastHtml;
             container.appendChild(toastElement);
 
             const toast = toastElement.querySelector('.toast');
-            const bsToast = new bootstrap.Toast(toast, {
-                delay: delay
-            });
+            const bsToast = new bootstrap.Toast(toast, { delay: delay });
             bsToast.show();
 
-            if (delay > 0) {
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.remove();
-                    }
-                }, delay + 1000);
-            }
-
-            return bsToast;
-        }
-
-        // Надежная функция скачивания файла
-        function downloadFile(downloadUrl, exportId) {
-            console.log("Downloading:", downloadUrl);
-
-            $('#exportModal').modal('hide'); // если модалка открыта
-
             setTimeout(() => {
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.setAttribute('download', '');
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // локальное кеширование
-                const downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
-                if (!downloadedExports.includes(exportId)) {
-                    downloadedExports.push(exportId);
-                    localStorage.setItem('downloadedExports', JSON.stringify(downloadedExports));
+                if (toastElement.parentNode) {
+                    toastElement.remove();
                 }
-            }, 300);
+            }, delay + 1000);
         }
 
-        // Альтернативный метод скачивания через создание ссылки
-        function downloadFileAlternative(fileName, exportId) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const link = document.createElement('a');
-                    link.href = `{{ url('download-export') }}/${fileName}`;
-                    link.download = fileName;
-                    link.style.display = 'none';
+        // Функция принудительного скачивания файла
+        function forceDownloadFile(fileName, exportId) {
+            console.log('Force downloading:', fileName);
 
-                    link.onclick = function() {
-                        // Помечаем файл как скачанный
-                        const downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
-                        if (!downloadedExports.includes(exportId)) {
-                            downloadedExports.push(exportId);
-                            localStorage.setItem('downloadedExports', JSON.stringify(downloadedExports));
-                        }
+            // Прямая ссылка на скачивание
+            const downloadUrl = `/download-export-direct/${fileName}`;
 
-                        setTimeout(() => {
-                            resolve();
-                        }, 1000);
-                    };
+            // Создаем невидимую ссылку и кликаем
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = fileName;
+            link.style.display = 'none';
+            document.body.appendChild(link);
 
-                    document.body.appendChild(link);
-                    link.click();
-
-                    // Удаляем ссылку через некоторое время
-                    setTimeout(() => {
-                        if (link.parentNode) {
-                            document.body.removeChild(link);
-                        }
-                    }, 5000);
-
-                } catch (error) {
-                    reject(error);
+            // Добавляем обработчик для отслеживания
+            link.onclick = function() {
+                console.log('Download clicked for:', fileName);
+                // Отмечаем как скачанный
+                const downloaded = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+                if (!downloaded.includes(exportId)) {
+                    downloaded.push(exportId);
+                    localStorage.setItem('downloadedExports', JSON.stringify(downloaded));
                 }
-            });
-        }
+            };
 
-        // Основная функция скачивания
-        // Основная функция скачивания
-        async function downloadExportFile(fileName, exportId) {
-            try {
-                console.log('Starting download process for:', fileName);
+            link.click();
 
-                showToastNotification('Подготовка', `Подготовка файла ${fileName} к скачиванию...`, 'info', 3000);
-
-                // Получаем прямой URL для скачивания
-                const response = await fetch(`/download-export/${fileName}`, {
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.download_url) {
-                    // Используем прямой URL для скачивания
-                    const link = document.createElement('a');
-                    link.href = data.download_url;
-                    link.target = '_blank';
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
+            // Удаляем ссылку через секунду
+            setTimeout(() => {
+                if (link.parentNode) {
                     document.body.removeChild(link);
-
-                    // Помечаем как скачанный
-                    markAsDownloaded(exportId);
-
-                    showToastNotification('Успех', `Файл ${fileName} успешно скачан.`, 'success', 5000);
-                } else {
-                    throw new Error(data.error || 'Не удалось получить ссылку для скачивания');
                 }
-
-            } catch (error) {
-                console.error('Download error:', error);
-
-                // Показываем кнопку для ручного скачивания
-                showManualDownloadOption(fileName, exportId);
-
-                showToastNotification(
-                    'Скачайте вручную',
-                    'Нажмите на кнопку "Скачать вручную" для загрузки файла.',
-                    'warning',
-                    8000
-                );
-            }
-        }
-
-        // Функция для показа опции ручного скачивания
-        function showManualDownloadOption(fileName, exportId) {
-            // Сначала удаляем предыдущие уведомления о ручном скачивании
-            document.querySelectorAll('.manual-download-toast').forEach(toast => {
-                toast.remove();
-            });
-
-            const manualDownloadHtml = `
-            <div class="bs-toast toast toast-placement-ex m-2 fade bg-warning manual-download-toast" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header">
-                    <i class="icon-base ri ri-download-line me-2"></i>
-                    <div class="me-auto fw-semibold">Скачать вручную</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body">
-                    <p>Файл <strong>${fileName}</strong> готов к скачиванию.</p>
-                    <div class="d-flex gap-2 mt-2">
-                        <a href="{{ url('download-export') }}/${fileName}"
-                           class="btn btn-sm btn-primary"
-                           download
-                           onclick="markAsDownloaded('${exportId}')">
-                            <i class="icon-base ri ri-download-line me-1"></i> Скачать
-                        </a>
-                        <button class="btn btn-sm btn-secondary" onclick="this.closest('.toast').remove()">
-                            <i class="icon-base ri ri-close-line me-1"></i> Закрыть
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-            const container = document.getElementById('notifications-container');
-            const toastElement = document.createElement('div');
-            toastElement.innerHTML = manualDownloadHtml;
-            container.appendChild(toastElement);
-
-            const toast = toastElement.querySelector('.toast');
-            new bootstrap.Toast(toast, { delay: 0 }).show();
-        }
-
-        // Функция для отметки скачанных файлов
-        function markAsDownloaded(exportId) {
-            const downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
-            if (!downloadedExports.includes(exportId)) {
-                downloadedExports.push(exportId);
-                localStorage.setItem('downloadedExports', JSON.stringify(downloadedExports));
-            }
-
-            // Удаляем уведомление о ручном скачивании
-            setTimeout(() => {
-                document.querySelectorAll('.manual-download-toast').forEach(toast => {
-                    toast.remove();
-                });
             }, 1000);
+
+            showToastNotification('Скачивание начато', `Файл ${fileName} загружается...`, 'success', 3000);
         }
 
-        // Функция для проверки статуса экспорта
+        // Проверка статуса экспорта
         async function checkExportStatus() {
+            if (isDownloading) return;
+
             try {
                 const response = await fetch('/export-status', {
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                         'Accept': 'application/json'
-                    },
-                    credentials: 'include'
+                    }
                 });
 
                 if (!response.ok) return;
+
                 const data = await response.json();
+                console.log('Export status check:', data);
 
                 if (!data.success) return;
 
-                // Берём завершённые экспорты
+                // Получаем завершенные экспорты
                 const completedExports = data.exports.filter(exp =>
-                    exp.status === 'completed' && exp.file_exists
+                    exp.status === 'completed' && exp.file_exists === true
                 );
 
+                console.log('Completed exports found:', completedExports.length);
+
+                // Проверяем какие еще не скачаны
+                const downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+
                 for (const exp of completedExports) {
-                    const downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
                     if (!downloadedExports.includes(exp.id)) {
-                        // Скачиваем файл через нашу функцию
-                        await downloadExportFile(exp.file_name, exp.id);
-                        break; // Обрабатываем по одному файлу за раз
+                        console.log('Starting download for export:', exp.id, exp.file_name);
+                        isDownloading = true;
+
+                        // Скачиваем файл
+                        forceDownloadFile(exp.file_name, exp.id);
+
+                        // Показываем уведомление
+                        showToastNotification(
+                            'Экспорт готов',
+                            `Файл "${exp.file_name}" успешно сформирован и начал скачивание.`,
+                            'success',
+                            5000
+                        );
+
+                        // Останавливаем интенсивную проверку если была
+                        if (intensiveCheckInterval) {
+                            clearInterval(intensiveCheckInterval);
+                            intensiveCheckInterval = null;
+                        }
+
+                        setTimeout(() => {
+                            isDownloading = false;
+                        }, 3000);
+
+                        break; // Скачиваем по одному файлу за раз
                     }
                 }
-
             } catch (error) {
                 console.error('Ошибка проверки экспорта:', error);
+                isDownloading = false;
             }
         }
 
-        // Проверка каждые 5 секунд
-        setInterval(checkExportStatus, 5000);
-
-        // Функция для интенсивной проверки статуса
+        // Интенсивная проверка после запуска экспорта
         function startIntensiveStatusChecking() {
-            let checkCount = 0;
-            const maxChecks = 120;
-
-            // Останавливаем предыдущий интервал если есть
+            // Останавливаем предыдущий интервал
             if (intensiveCheckInterval) {
                 clearInterval(intensiveCheckInterval);
             }
 
-            showToastNotification('Экспорт начался', 'Файл готовится. Это может занять несколько минут...', 'info', 8000);
+            let checkCount = 0;
+            const maxChecks = 60; // 5 минут максимум
 
-            intensiveCheckInterval = setInterval(async () => {
+            showToastNotification('Экспорт запущен', 'Файл готовится. Это может занять несколько минут...', 'info', 8000);
+
+            intensiveCheckInterval = setInterval(() => {
                 checkCount++;
+                console.log(`Intensive check ${checkCount}/${maxChecks}`);
 
                 if (checkCount >= maxChecks) {
                     clearInterval(intensiveCheckInterval);
-                    showToastNotification('Время ожидания истекло', 'Экспорт занимает больше времени чем ожидалось.', 'warning');
-                    return;
+                    intensiveCheckInterval = null;
+                    showToastNotification('Время ожидания', 'Экспорт занимает больше времени. Проверьте позже в разделе экспортов.', 'warning');
                 }
 
-                try {
-                    const response = await fetch('{{ route("export.status") }}', {
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        credentials: 'include'
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        if (data.success && data.exports && data.exports.length > 0) {
-                            const completedExports = data.exports.filter(exp =>
-                                exp.status === 'completed' && exp.file_exists === true
-                            );
-
-                            if (completedExports.length > 0) {
-                                clearInterval(intensiveCheckInterval);
-                                const exportItem = completedExports[0];
-                                await downloadExportFile(exportItem.file_name, exportItem.id);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.log('Интенсивная проверка:', error.message);
-                }
-            }, 5000);
+                checkExportStatus();
+            }, 5000); // Проверяем каждые 5 секунд
         }
 
-        // Основной код
+        // Создаем плавающую кнопку для ручного скачивания
+        function showFloatingDownloadButton(fileName, exportId) {
+            let floatBtn = document.getElementById('floating-download-btn');
+
+            if (!floatBtn) {
+                floatBtn = document.createElement('div');
+                floatBtn.id = 'floating-download-btn';
+                floatBtn.innerHTML = `
+                <div style="position: fixed; bottom: 20px; right: 20px; z-index: 10000;">
+                    <button class="btn btn-success btn-lg shadow" style="border-radius: 50px; padding: 12px 24px;">
+                        <i class="ri-download-line me-2"></i>
+                        Скачать экспорт
+                    </button>
+                </div>
+            `;
+                document.body.appendChild(floatBtn);
+
+                floatBtn.onclick = () => {
+                    forceDownloadFile(fileName, exportId);
+                    floatBtn.remove();
+                };
+            } else {
+                floatBtn.onclick = () => {
+                    forceDownloadFile(fileName, exportId);
+                    floatBtn.remove();
+                };
+            }
+
+            // Авто-скрытие через 1 минуту
+            setTimeout(() => {
+                if (floatBtn && floatBtn.parentNode) {
+                    floatBtn.remove();
+                }
+            }, 60000);
+        }
+
+        // Обработчик формы экспорта
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Страница регионов загружена');
 
-            // Обработчик клика по кнопке экспорта
+            // Установка CSRF токена для всех fetch запросов
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // Обработчики для кнопок экспорта
             document.querySelectorAll('.export-trigger').forEach(button => {
                 button.addEventListener('click', function() {
                     const regionId = this.getAttribute('data-region-id');
@@ -558,20 +462,20 @@
                 });
             });
 
-            // Обработчик отправки формы экспорта
+            // Отправка формы экспорта
             const exportForm = document.getElementById('exportForm');
             if (exportForm) {
                 exportForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
 
                     const form = this;
-                    const submitButton = form.querySelector('button[type="submit"]');
+                    const submitBtn = form.querySelector('button[type="submit"]');
                     const spinner = document.getElementById('exportSpinner');
-                    const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
 
-                    // Показываем спиннер
+                    // Блокируем кнопку
+                    submitBtn.disabled = true;
                     spinner.classList.remove('d-none');
-                    submitButton.disabled = true;
 
                     const formData = new FormData(form);
                     const regionId = formData.get('region_id');
@@ -580,92 +484,48 @@
                         const response = await fetch(`/regions/${regionId}/export-sentences`, {
                             method: 'POST',
                             headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json'
                             },
                             body: formData
                         });
 
                         const data = await response.json();
+                        console.log('Export response:', data);
 
                         if (data.success) {
-                            // Закрываем модальное окно экспорта
-                            exportModal.hide();
+                            // Закрываем модалку
+                            modal.hide();
 
-                            // Показываем уведомление о запуске
-                            showToastNotification('Экспорт запущен', 'Начинается процесс экспорта данных. Файл будет скачан автоматически после завершения.', 'info');
+                            // Показываем уведомление
+                            showToastNotification('Экспорт запущен', data.message, 'info');
 
-                            // Запускаем интенсивную проверку статуса
+                            // Запускаем интенсивную проверку
                             startIntensiveStatusChecking();
 
+                            // Также запускаем обычную периодическую проверку
+                            setTimeout(() => {
+                                checkExportStatus();
+                            }, 2000);
                         } else {
-                            throw new Error(data.message || 'Неизвестная ошибка');
+                            throw new Error(data.message || 'Ошибка запуска экспорта');
                         }
                     } catch (error) {
-                        console.error('Ошибка:', error);
-                        showToastNotification('Ошибка', 'Произошла ошибка при запуске экспорта.', 'error');
+                        console.error('Export error:', error);
+                        showToastNotification('Ошибка', error.message, 'error');
                     } finally {
-                        // Скрываем спиннер и активируем кнопку
+                        submitBtn.disabled = false;
                         spinner.classList.add('d-none');
-                        submitButton.disabled = false;
                     }
                 });
             }
 
-            // Периодическая проверка статуса каждые 30 секунд
-            setInterval(checkExportStatus, 30000);
+            // Запускаем проверку статуса сразу
+            checkExportStatus();
 
-            // Первая проверка через 5 секунд после загрузки
-            setTimeout(checkExportStatus, 5000);
+            // И каждые 10 секунд
+            setInterval(checkExportStatus, 10000);
         });
-
-        function showDownloadButton(fileName, exportId) {
-            // Создаем фиксированную кнопку скачивания
-            let downloadBtn = document.getElementById('floating-download-btn');
-            if (!downloadBtn) {
-                downloadBtn = document.createElement('div');
-                downloadBtn.id = 'floating-download-btn';
-                downloadBtn.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 10000;
-            background: #28a745;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            display: none;
-            align-items: center;
-            gap: 10px;
-            font-weight: bold;
-        `;
-                downloadBtn.innerHTML = `
-            <i class="ri-download-line"></i>
-            <span>Скачать файл экспорта</span>
-        `;
-                document.body.appendChild(downloadBtn);
-
-                downloadBtn.onclick = function() {
-                    window.location.href = `/download-export/${fileName}`;
-                    downloadBtn.style.display = 'none';
-                    markAsDownloaded(exportId);
-                };
-            } else {
-                downloadBtn.onclick = function() {
-                    window.location.href = `/download-export/${fileName}`;
-                    downloadBtn.style.display = 'none';
-                    markAsDownloaded(exportId);
-                };
-            }
-            downloadBtn.style.display = 'flex';
-
-            // Автоматически скрываем через 30 секунд
-            setTimeout(() => {
-                if (downloadBtn) downloadBtn.style.display = 'none';
-            }, 30000);
-        }
     </script>
 @endpush
 
