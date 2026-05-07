@@ -340,33 +340,69 @@
 
                 if (!data.success) return;
 
-                // Получаем завершенные экспорты
-                const completedExports = data.exports.filter(exp =>
-                    exp.status === 'completed' && exp.file_exists === true
-                );
+                // Получаем завершенные экспорты, созданные за последние 10 минут
+                const tenMinutesAgo = new Date();
+                tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
 
-                console.log('Completed exports found:', completedExports.length);
+                const completedExports = data.exports.filter(exp => {
+                    // Проверяем статус и существование файла
+                    if (exp.status !== 'completed' || !exp.file_exists) return false;
 
-                // Проверяем какие еще не скачаны
-                const downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+                    // Проверяем дату создания (если есть)
+                    if (exp.created_at) {
+                        // Парсим дату из формата "дд.мм.гггг ЧЧ:ММ"
+                        const parts = exp.created_at.split(/[.\s:]/);
+                        if (parts.length >= 5) {
+                            const expDate = new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
+                            const now = new Date();
+                            const diffMinutes = (now - expDate) / 1000 / 60;
+
+                            // Не скачиваем экспорты старше 10 минут
+                            if (diffMinutes > 10) {
+                                console.log('Skipping old export:', exp.id, 'created:', diffMinutes, 'minutes ago');
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                });
+
+                console.log('Recent completed exports:', completedExports.length);
+
+                // Получаем список скачанных
+                let downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+
+                // Очищаем старые записи из localStorage (старше 1 часа)
+                const oneHourAgo = Date.now() - (60 * 60 * 1000);
+                const exportTimestamps = JSON.parse(localStorage.getItem('exportTimestamps') || '{}');
 
                 for (const exp of completedExports) {
                     if (!downloadedExports.includes(exp.id)) {
+                        // Проверяем не пытались ли мы скачать этот файл недавно
+                        const lastAttempt = exportTimestamps[exp.id];
+                        if (lastAttempt && (Date.now() - lastAttempt) < 30000) {
+                            console.log('Skipping recent attempt for export:', exp.id);
+                            continue;
+                        }
+
                         console.log('Starting download for export:', exp.id, exp.file_name);
                         isDownloading = true;
+
+                        // Запоминаем попытку скачивания
+                        exportTimestamps[exp.id] = Date.now();
+                        localStorage.setItem('exportTimestamps', JSON.stringify(exportTimestamps));
 
                         // Скачиваем файл
                         forceDownloadFile(exp.file_name, exp.id);
 
-                        // Показываем уведомление
                         showToastNotification(
                             'Экспорт готов',
-                            `Файл "${exp.file_name}" успешно сформирован и начал скачивание.`,
+                            `Файл "${exp.file_name}" успешно сформирован.`,
                             'success',
                             5000
                         );
 
-                        // Останавливаем интенсивную проверку если была
                         if (intensiveCheckInterval) {
                             clearInterval(intensiveCheckInterval);
                             intensiveCheckInterval = null;
@@ -376,7 +412,7 @@
                             isDownloading = false;
                         }, 3000);
 
-                        break; // Скачиваем по одному файлу за раз
+                        break;
                     }
                 }
             } catch (error) {
