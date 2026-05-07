@@ -22,12 +22,23 @@ class TranslatorController extends Controller
     public function translations(Request $request)
     {
         $translations = auth()->user()->translations()
+            ->whereIn('status', [
+                Translation::STATUS_TRANSLATED,    // 1 - На проверке
+                Translation::STATUS_PROOFREAD,     // 2 - Подтвержден
+                Translation::STATUS_REJECTED,      // 3 - Отклонен
+                Translation::STATUS_COMPLETED_BY_ADMIN // 4 - Завершен администратором
+            ])
             ->when($request->search, function($query) use ($request) {
-                $query->where('translated_text', 'like', '%'.$request->search.'%');
+                $query->whereHas('sentence', function($q) use ($request) {
+                    $q->where('sentence', 'like', '%'.$request->search.'%');
+                })
+                    ->orWhere('translated_text', 'like', '%'.$request->search.'%');
             })
             ->when($request->status, function($query) use ($request) {
                 $query->where('status', $request->status);
             })
+            ->with(['sentence', 'translator'])
+            ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
@@ -60,7 +71,7 @@ class TranslatorController extends Controller
     protected function getActiveTranslation(User $user): ?Translation
     {
         return Translation::where('translator_id', $user->id)
-            ->whereIn('status', [Translation::STATUS_ASSIGNED, Translation::STATUS_REJECTED])
+            ->where('status', Translation::STATUS_ASSIGNED)
             ->where('locked_by', $user->id)
             ->where('locked_at', '>', now()->subHours(2))
             ->with('sentence')
@@ -74,10 +85,19 @@ class TranslatorController extends Controller
                 $q->where('region_id', $user->region_id)
                     ->whereIn('status', [
                         Translation::STATUS_TRANSLATED,
-                        Translation::STATUS_PROOFREAD
+                        Translation::STATUS_PROOFREAD,
+                        Translation::STATUS_COMPLETED_BY_ADMIN
                     ]);
             })
                 ->whereDoesntHave('translations', function($q) use ($user) {
+                    // Проверяем активные назначения ДРУГИМ переводчикам
+                    $q->where('region_id', $user->region_id)
+                        ->where('status', Translation::STATUS_ASSIGNED)
+                        ->where('locked_by', '!=', $user->id) // Назначено другому
+                        ->where('locked_at', '>', now()->subHours(2)); // Блокировка активна
+                })
+                ->whereDoesntHave('translations', function($q) use ($user) {
+                    // Проверяем, не назначено ли этому пользователю уже
                     $q->where('region_id', $user->region_id)
                         ->where('translator_id', $user->id)
                         ->where('status', Translation::STATUS_ASSIGNED);
@@ -88,9 +108,40 @@ class TranslatorController extends Controller
                 return null;
             }
 
-            // 2. Создаем/обновляем перевод для региона
             return $sentence->assignToRegion($user->region_id, $user);
         });
+    }
+
+    protected function getAvailableSentence(User $user): ?Sentence
+    {
+        return Sentence::where(function($query) use ($user) {
+            // Нет завершенных переводов для региона
+            $query->whereDoesntHave('translations', function($q) use ($user) {
+                $q->where('region_id', $user->region_id)
+                    ->whereIn('status', [
+                        Translation::STATUS_TRANSLATED,
+                        Translation::STATUS_PROOFREAD,
+                        Translation::STATUS_COMPLETED_BY_ADMIN
+                    ]);
+            });
+
+            // Нет активных назначений другим переводчикам
+            $query->whereDoesntHave('translations', function($q) use ($user) {
+                $q->where('region_id', $user->region_id)
+                    ->where('status', Translation::STATUS_ASSIGNED)
+                    ->where('translator_id', '!=', $user->id)
+                    ->where('locked_at', '>', now()->subHours(2));
+            });
+
+            // Нет активного назначения этому переводчику
+            $query->whereDoesntHave('translations', function($q) use ($user) {
+                $q->where('region_id', $user->region_id)
+                    ->where('translator_id', $user->id)
+                    ->where('status', Translation::STATUS_ASSIGNED);
+            });
+        })
+            ->where('status', Sentence::STATUS_AVAILABLE)
+            ->first();
     }
 
     protected function getCurrentTranslation(User $user): ?Translation

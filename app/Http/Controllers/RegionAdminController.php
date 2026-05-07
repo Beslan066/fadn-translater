@@ -174,9 +174,11 @@ class RegionAdminController extends Controller
 
         $query = Translation::query()
             ->with(['sentence', 'translator', 'proofreader'])
-            ->where('region_id', $regionId);
+            ->where('region_id', $regionId)
+            // Исключаем статус ASSIGNED (назначен)
+            ->where('status', '!=', Translation::STATUS_ASSIGNED);
 
-        // Фильтр по статусу
+        // Фильтр по статусу (исключая ASSIGNED, но оставляем остальные)
         if ($request->status !== null && $request->status !== '') {
             $query->where('status', (int) $request->status);
         }
@@ -216,10 +218,9 @@ class RegionAdminController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'role']);
 
-        // Статистика по статусам
+        // Статистика по статусам (исключая ASSIGNED из статистики если нужно)
         $stats = [
-            'total' => Translation::where('region_id', $regionId)->count(),
-            Translation::STATUS_ASSIGNED => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_ASSIGNED)->count(),
+            'total' => Translation::where('region_id', $regionId)->where('status', '!=', Translation::STATUS_ASSIGNED)->count(),
             Translation::STATUS_TRANSLATED => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_TRANSLATED)->count(),
             Translation::STATUS_PROOFREAD => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_PROOFREAD)->count(),
             Translation::STATUS_REJECTED => Translation::where('region_id', $regionId)->where('status', Translation::STATUS_REJECTED)->count(),
@@ -250,14 +251,13 @@ class RegionAdminController extends Controller
             'region' => $region,
             'avgTime' => $avgTime,
             'statuses' => [
-                Translation::STATUS_ASSIGNED => 'Назначен',
+                // Убрал STATUS_ASSIGNED из списка статусов для фильтра
                 Translation::STATUS_TRANSLATED => 'Переведен (ждет проверки)',
                 Translation::STATUS_PROOFREAD => 'Проверен',
                 Translation::STATUS_REJECTED => 'Отклонен',
                 Translation::STATUS_COMPLETED_BY_ADMIN => 'Завершен админом',
             ],
             'statusColors' => [
-                Translation::STATUS_ASSIGNED => 'secondary',
                 Translation::STATUS_TRANSLATED => 'warning',
                 Translation::STATUS_PROOFREAD => 'success',
                 Translation::STATUS_REJECTED => 'danger',

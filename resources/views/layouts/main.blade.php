@@ -227,10 +227,14 @@
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="{{route('logout')}}" class="menu-link">
-                            <i class="menu-icon icon-base ri ri-logout-box-line"></i>
-                            <div data-i18n="Form Elements">Выйти</div>
-                        </a>
+                        <form method="post" action="{{route('logout')}}">
+                            @method('post')
+                            @csrf
+                            <button type="submit" class="menu-link" style="background: none; border: none;">
+                                <i class="menu-icon icon-base ri ri-logout-box-line"></i>
+                                <div data-i18n="Form Elements">Выйти</div>
+                            </button>
+                        </form>
                     </li>
                 </ul>
             </div>

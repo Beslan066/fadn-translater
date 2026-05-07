@@ -29,13 +29,6 @@
                             Отправить перевод
                         </button>
 
-                        <form method="POST" action="{{ route('translator.skip', $translation) }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-danger"
-                                    onclick="return confirm('Вы уверены, что хотите пропустить это предложение?')">
-                                Пропустить предложение
-                            </button>
-                        </form>
                     </div>
                 </form>
             </div>

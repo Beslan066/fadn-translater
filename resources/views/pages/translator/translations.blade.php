@@ -11,12 +11,7 @@
                     <div class="d-md-flex justify-content-between align-items-center dt-layout-end col-md-auto ms-auto">
                         <div class="dt-buttons btn-group flex-wrap">
                             <div class="btn-group">
-                                <button
-                                    class="btn buttons-collection btn-label-primary dropdown-toggle me-4 waves-effect border-none"
-                                    tabindex="0" aria-controls="DataTables_Table_0" type="button" aria-haspopup="dialog"
-                                    aria-expanded="false"><span><span class="d-flex align-items-center gap-2"><i
-                                                class="icon-base ri ri-external-link-line icon-18px"></i> <span
-                                                class="d-none d-sm-inline-block">Экспорт</span></span></span></button>
+
                             </div>
                         </div>
                     </div>
@@ -103,25 +98,36 @@
                                 <tr>
                                     <td class="dt-select">{{$translation->id}}</td>
                                     <td style="white-space: normal;">
-                                        <span class="emp_name text-truncate h6 mb-0">{{$translation->translated_text}}</span>
+                                        {{$translation->sentence->sentence}}
                                     </td>
                                     <td style="white-space: normal;">
-                                        {{$translation->sentence->sentence }}
+                                        {{$translation->translated_text}}
                                     </td>
-                                        <td>{{$translation->created_at}}</td>
+                                    <td>{{ $translation->translated_at ? $translation->translated_at->format('d.m.Y H:i') : $translation->updated_at->format('d.m.Y H:i') }}</td>
                                     <td class="dt-type-numeric">{{$translation->translator->name}}</td>
                                     <td>
-                                      <span class="badge rounded-pill  bg-label-success">
-                                        @if($translation->status === 2)
-                                              Подтвержден
-                                          @elseif($translation->status === 3)
-                                              Отклонен
-                                          @elseif($translation->status === 1)
-                                                На проверке
-                                          @endif
-                                      </span>
+            <span class="badge rounded-pill
+                @if($translation->status === \App\Models\Translation::STATUS_PROOFREAD)
+                    bg-label-success
+                @elseif($translation->status === \App\Models\Translation::STATUS_REJECTED)
+                    bg-label-danger
+                @elseif($translation->status === \App\Models\Translation::STATUS_TRANSLATED)
+                    bg-label-warning
+                @elseif($translation->status === \App\Models\Translation::STATUS_COMPLETED_BY_ADMIN)
+                    bg-label-info
+                @endif
+            ">
+                @if($translation->status === \App\Models\Translation::STATUS_PROOFREAD)
+                    Подтвержден
+                @elseif($translation->status === \App\Models\Translation::STATUS_REJECTED)
+                    Отклонен
+                @elseif($translation->status === \App\Models\Translation::STATUS_TRANSLATED)
+                    На проверке
+                @elseif($translation->status === \App\Models\Translation::STATUS_COMPLETED_BY_ADMIN)
+                    Завершен администратором
+                @endif
+            </span>
                                     </td>
-
                                 </tr>
                             @endforeach
                             </tbody>

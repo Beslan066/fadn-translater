@@ -13,8 +13,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class Sentence extends Model
 {
     // Статусы предложений (оставляем для совместимости)
-    const STATUS_AVAILABLE = 0;
-    const STATUS_ASSIGNED = 1;
+    const STATUS_AVAILABLE = 0; // Доступные
+    const STATUS_ASSIGNED = 1;  //Назначенные
     const STATUS_TRANSLATED = 2;
     const STATUS_PROOFREAD = 3;
     const STATUS_REJECTED = 4;
