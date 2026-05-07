@@ -245,12 +245,10 @@
 @endsection
 
 @push('scripts')
-    // Полностью замените скрипт на странице регионов на этот:
-
     <script>
-        // Глобальные переменные
         let intensiveCheckInterval = null;
         let isDownloading = false;
+        let downloadAttempts = {}; // Для отслеживания попыток
 
         // Функция для показа уведомлений
         function showToastNotification(title, message, type = 'info', delay = 5000) {
@@ -284,48 +282,46 @@
             }, delay + 1000);
         }
 
-        // Функция принудительного скачивания файла
+        // Функция принудительного скачивания
         function forceDownloadFile(fileName, exportId) {
-            console.log('Force downloading:', fileName);
+            console.log('Force downloading file:', fileName, 'exportId:', exportId);
 
-            // Прямая ссылка на скачивание
             const downloadUrl = `/download-export-direct/${fileName}`;
 
-            // Создаем невидимую ссылку и кликаем
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = fileName;
-            link.style.display = 'none';
-            document.body.appendChild(link);
+            // Создаем iframe для скачивания (более надежно)
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = downloadUrl;
+            document.body.appendChild(iframe);
 
-            // Добавляем обработчик для отслеживания
-            link.onclick = function() {
-                console.log('Download clicked for:', fileName);
-                // Отмечаем как скачанный
-                const downloaded = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
-                if (!downloaded.includes(exportId)) {
-                    downloaded.push(exportId);
-                    localStorage.setItem('downloadedExports', JSON.stringify(downloaded));
-                }
-            };
+            // Отмечаем как скачанный
+            const downloaded = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+            if (!downloaded.includes(exportId)) {
+                downloaded.push(exportId);
+                localStorage.setItem('downloadedExports', JSON.stringify(downloaded));
+                console.log('Marked export as downloaded:', exportId);
+            }
 
-            link.click();
-
-            // Удаляем ссылку через секунду
+            // Удаляем iframe через 2 секунды
             setTimeout(() => {
-                if (link.parentNode) {
-                    document.body.removeChild(link);
+                if (iframe.parentNode) {
+                    document.body.removeChild(iframe);
                 }
-            }, 1000);
+            }, 2000);
 
             showToastNotification('Скачивание начато', `Файл ${fileName} загружается...`, 'success', 3000);
         }
 
-        // Проверка статуса экспорта
+        // Проверка статуса экспорта (упрощенная версия)
         async function checkExportStatus() {
-            if (isDownloading) return;
+            if (isDownloading) {
+                console.log('Already downloading, skipping...');
+                return;
+            }
 
             try {
+                console.log('Checking export status...');
+
                 const response = await fetch('/export-status', {
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -333,97 +329,106 @@
                     }
                 });
 
-                if (!response.ok) return;
+                if (!response.ok) {
+                    console.log('Response not OK:', response.status);
+                    return;
+                }
 
                 const data = await response.json();
-                console.log('Export status check:', data);
+                console.log('Export status response:', data);
 
-                if (!data.success) return;
+                if (!data.success) {
+                    console.log('Export status not successful');
+                    return;
+                }
 
-                // Получаем завершенные экспорты, созданные за последние 10 минут
-                const tenMinutesAgo = new Date();
-                tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
+                if (!data.exports || data.exports.length === 0) {
+                    console.log('No exports found');
+                    return;
+                }
 
+                // Логируем все экспорты для отладки
+                console.log('All exports:', data.exports.map(e => ({
+                    id: e.id,
+                    status: e.status,
+                    file_exists: e.file_exists,
+                    file_name: e.file_name
+                })));
+
+                // Находим завершенные экспорты (без фильтрации по дате)
                 const completedExports = data.exports.filter(exp => {
-                    // Проверяем статус и существование файла
-                    if (exp.status !== 'completed' || !exp.file_exists) return false;
-
-                    // Проверяем дату создания (если есть)
-                    if (exp.created_at) {
-                        // Парсим дату из формата "дд.мм.гггг ЧЧ:ММ"
-                        const parts = exp.created_at.split(/[.\s:]/);
-                        if (parts.length >= 5) {
-                            const expDate = new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
-                            const now = new Date();
-                            const diffMinutes = (now - expDate) / 1000 / 60;
-
-                            // Не скачиваем экспорты старше 10 минут
-                            if (diffMinutes > 10) {
-                                console.log('Skipping old export:', exp.id, 'created:', diffMinutes, 'minutes ago');
-                                return false;
-                            }
-                        }
+                    const isCompleted = exp.status === 'completed';
+                    const fileExists = exp.file_exists === true;
+                    const result = isCompleted && fileExists;
+                    if (!result) {
+                        console.log(`Export ${exp.id} not ready: status=${exp.status}, file_exists=${fileExists}`);
                     }
-
-                    return true;
+                    return result;
                 });
 
-                console.log('Recent completed exports:', completedExports.length);
+                console.log('Completed exports found:', completedExports.length);
+
+                if (completedExports.length === 0) {
+                    console.log('No completed exports found');
+                    return;
+                }
 
                 // Получаем список скачанных
                 let downloadedExports = JSON.parse(localStorage.getItem('downloadedExports') || '[]');
+                console.log('Already downloaded exports:', downloadedExports);
 
-                // Очищаем старые записи из localStorage (старше 1 часа)
-                const oneHourAgo = Date.now() - (60 * 60 * 1000);
-                const exportTimestamps = JSON.parse(localStorage.getItem('exportTimestamps') || '{}');
-
+                // Проверяем каждый завершенный экспорт
                 for (const exp of completedExports) {
-                    if (!downloadedExports.includes(exp.id)) {
-                        // Проверяем не пытались ли мы скачать этот файл недавно
-                        const lastAttempt = exportTimestamps[exp.id];
-                        if (lastAttempt && (Date.now() - lastAttempt) < 30000) {
-                            console.log('Skipping recent attempt for export:', exp.id);
-                            continue;
-                        }
-
-                        console.log('Starting download for export:', exp.id, exp.file_name);
-                        isDownloading = true;
-
-                        // Запоминаем попытку скачивания
-                        exportTimestamps[exp.id] = Date.now();
-                        localStorage.setItem('exportTimestamps', JSON.stringify(exportTimestamps));
-
-                        // Скачиваем файл
-                        forceDownloadFile(exp.file_name, exp.id);
-
-                        showToastNotification(
-                            'Экспорт готов',
-                            `Файл "${exp.file_name}" успешно сформирован.`,
-                            'success',
-                            5000
-                        );
-
-                        if (intensiveCheckInterval) {
-                            clearInterval(intensiveCheckInterval);
-                            intensiveCheckInterval = null;
-                        }
-
-                        setTimeout(() => {
-                            isDownloading = false;
-                        }, 3000);
-
-                        break;
+                    // Проверяем не скачан ли уже
+                    if (downloadedExports.includes(exp.id)) {
+                        console.log(`Export ${exp.id} already downloaded, skipping`);
+                        continue;
                     }
+
+                    // Проверяем не пытались ли скачать недавно (последние 30 секунд)
+                    const lastAttempt = downloadAttempts[exp.id];
+                    if (lastAttempt && (Date.now() - lastAttempt) < 30000) {
+                        console.log(`Recent download attempt for ${exp.id}, skipping`);
+                        continue;
+                    }
+
+                    console.log(`Ready to download export ${exp.id}: ${exp.file_name}`);
+
+                    // Запоминаем попытку
+                    downloadAttempts[exp.id] = Date.now();
+                    isDownloading = true;
+
+                    // Скачиваем
+                    forceDownloadFile(exp.file_name, exp.id);
+
+                    showToastNotification(
+                        'Экспорт готов',
+                        `Файл "${exp.file_name}" готов к скачиванию.`,
+                        'success',
+                        5000
+                    );
+
+                    // Останавливаем интенсивную проверку
+                    if (intensiveCheckInterval) {
+                        clearInterval(intensiveCheckInterval);
+                        intensiveCheckInterval = null;
+                    }
+
+                    // Сбрасываем флаг через 5 секунд
+                    setTimeout(() => {
+                        isDownloading = false;
+                    }, 5000);
+
+                    break; // Скачиваем один файл за раз
                 }
             } catch (error) {
-                console.error('Ошибка проверки экспорта:', error);
+                console.error('Error checking export status:', error);
                 isDownloading = false;
             }
         }
 
         // Интенсивная проверка после запуска экспорта
         function startIntensiveStatusChecking() {
-            // Останавливаем предыдущий интервал
             if (intensiveCheckInterval) {
                 clearInterval(intensiveCheckInterval);
             }
@@ -433,6 +438,9 @@
 
             showToastNotification('Экспорт запущен', 'Файл готовится. Это может занять несколько минут...', 'info', 8000);
 
+            // Первая проверка через 2 секунды
+            setTimeout(() => checkExportStatus(), 2000);
+
             intensiveCheckInterval = setInterval(() => {
                 checkCount++;
                 console.log(`Intensive check ${checkCount}/${maxChecks}`);
@@ -440,60 +448,26 @@
                 if (checkCount >= maxChecks) {
                     clearInterval(intensiveCheckInterval);
                     intensiveCheckInterval = null;
-                    showToastNotification('Время ожидания', 'Экспорт занимает больше времени. Проверьте позже в разделе экспортов.', 'warning');
+                    showToastNotification('Время ожидания', 'Экспорт занимает больше времени. Проверьте статус в разделе экспортов.', 'warning');
                 }
 
                 checkExportStatus();
-            }, 5000); // Проверяем каждые 5 секунд
-        }
-
-        // Создаем плавающую кнопку для ручного скачивания
-        function showFloatingDownloadButton(fileName, exportId) {
-            let floatBtn = document.getElementById('floating-download-btn');
-
-            if (!floatBtn) {
-                floatBtn = document.createElement('div');
-                floatBtn.id = 'floating-download-btn';
-                floatBtn.innerHTML = `
-                <div style="position: fixed; bottom: 20px; right: 20px; z-index: 10000;">
-                    <button class="btn btn-success btn-lg shadow" style="border-radius: 50px; padding: 12px 24px;">
-                        <i class="ri-download-line me-2"></i>
-                        Скачать экспорт
-                    </button>
-                </div>
-            `;
-                document.body.appendChild(floatBtn);
-
-                floatBtn.onclick = () => {
-                    forceDownloadFile(fileName, exportId);
-                    floatBtn.remove();
-                };
-            } else {
-                floatBtn.onclick = () => {
-                    forceDownloadFile(fileName, exportId);
-                    floatBtn.remove();
-                };
-            }
-
-            // Авто-скрытие через 1 минуту
-            setTimeout(() => {
-                if (floatBtn && floatBtn.parentNode) {
-                    floatBtn.remove();
-                }
-            }, 60000);
+            }, 5000);
         }
 
         // Обработчик формы экспорта
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Страница регионов загружена');
+            console.log('Page loaded - initializing export functionality');
 
-            // Установка CSRF токена для всех fetch запросов
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            // Очищаем историю скачиваний для теста (раскомментируйте при необходимости)
+            // localStorage.removeItem('downloadedExports');
+            // console.log('Cleared download history');
 
             // Обработчики для кнопок экспорта
             document.querySelectorAll('.export-trigger').forEach(button => {
                 button.addEventListener('click', function() {
                     const regionId = this.getAttribute('data-region-id');
+                    console.log('Export button clicked for region:', regionId);
                     document.getElementById('exportRegionId').value = regionId;
                 });
             });
@@ -503,24 +477,27 @@
             if (exportForm) {
                 exportForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
+                    console.log('Export form submitted');
 
                     const form = this;
                     const submitBtn = form.querySelector('button[type="submit"]');
                     const spinner = document.getElementById('exportSpinner');
                     const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
 
-                    // Блокируем кнопку
                     submitBtn.disabled = true;
                     spinner.classList.remove('d-none');
 
                     const formData = new FormData(form);
                     const regionId = formData.get('region_id');
+                    const otherSentence = formData.get('other_sentence');
+
+                    console.log('Export params:', { regionId, otherSentence });
 
                     try {
                         const response = await fetch(`/regions/${regionId}/export-sentences`, {
                             method: 'POST',
                             headers: {
-                                'X-CSRF-TOKEN': csrfToken,
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                                 'Accept': 'application/json'
                             },
                             body: formData
@@ -530,19 +507,16 @@
                         console.log('Export response:', data);
 
                         if (data.success) {
-                            // Закрываем модалку
                             modal.hide();
-
-                            // Показываем уведомление
                             showToastNotification('Экспорт запущен', data.message, 'info');
 
                             // Запускаем интенсивную проверку
                             startIntensiveStatusChecking();
 
-                            // Также запускаем обычную периодическую проверку
+                            // Также сразу проверяем статус
                             setTimeout(() => {
                                 checkExportStatus();
-                            }, 2000);
+                            }, 3000);
                         } else {
                             throw new Error(data.message || 'Ошибка запуска экспорта');
                         }
@@ -556,11 +530,17 @@
                 });
             }
 
-            // Запускаем проверку статуса сразу
-            checkExportStatus();
+            // Запускаем проверку статуса, но с задержкой и только если есть активные экспорты
+            setTimeout(() => {
+                console.log('Initial status check after 3 seconds');
+                checkExportStatus();
+            }, 3000);
 
-            // И каждые 10 секунд
-            setInterval(checkExportStatus, 10000);
+            // Проверяем каждые 10 секунд
+            setInterval(() => {
+                console.log('Periodic status check');
+                checkExportStatus();
+            }, 10000);
         });
     </script>
 @endpush
