@@ -76,7 +76,7 @@
 
                         <div class="col-md-2">
                             <label class="form-label fw-semibold">
-                                <i class="ri-list-settings-line me-1"></i>Записей
+                                <i class="ri-list-settings-line me-1"></i>Записи
                             </label>
                             <select name="limit" class="form-select">
                                 <option value="10" {{ $currentLimit == 10 ? 'selected' : '' }}>10</option>
@@ -111,7 +111,7 @@
                     </h5>
                 </div>
                 <div class="text-muted">
-                    <small>Найдено: {{ $translations->total() }} записей</small>
+                    <small>Найдено: {{ $translations->total() }} записи</small>
                 </div>
             </div>
             <div class="card-body p-0">
@@ -126,15 +126,16 @@
                             <th>Корректор</th>
                             <th>Статус</th>
                             <th>Дата</th>
-                            <th width="60">Действия</th>
                         </tr>
                         </thead>
                         <tbody>
                         @forelse($translations as $translation)
                             <tr>
-                                <td>{{ $translation->sentence_id }}</td>
                                 <td>
-                                    <div class="text-truncate" style="max-width: 300px;" title="{{ $translation->sentence->sentence ?? 'N/A' }}">
+                                    {{ $translation->sentence_id }}
+                                </td>
+                                <td>
+                                    <div class="text-truncate" data-bs-toggle="modal" data-bs-target="#translationModal7" title="Просмотр деталей" style="max-width: 300px; text-decoration: underline; cursor: pointer;" title="{{ $translation->sentence->sentence ?? 'N/A' }}">
                                         {{ Str::limit($translation->sentence->sentence ?? 'Предложение удалено', 100) }}
                                     </div>
                                     @if($translation->sentence && $translation->sentence->otherSentence)
@@ -172,14 +173,6 @@
                                 </td>
                                 <td>{{ $translation->created_at ? $translation->created_at->format('d.m.Y') : '—' }}<br>
                                     <small class="text-muted">{{ $translation->created_at ? $translation->created_at->format('H:i') : '' }}</small>
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-outline-primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#translationModal{{ $translation->id }}"
-                                            title="Просмотр деталей">
-                                        <i class="ri-eye-line"></i>
-                                    </button>
                                 </td>
                             </tr>
 
@@ -219,7 +212,6 @@
                                                     <div class="mt-1">
                                                         @if($translation->translator)
                                                             <span class="badge bg-info fs-6">{{ $translation->translator->name }}</span>
-                                                            <small class="text-muted d-block mt-1">ID: {{ $translation->translator->id }}</small>
                                                         @else
                                                             <span class="text-muted">—</span>
                                                         @endif
@@ -232,7 +224,6 @@
                                                     <div class="mt-1">
                                                         @if($translation->proofreader)
                                                             <span class="badge bg-success fs-6">{{ $translation->proofreader->name }}</span>
-                                                            <small class="text-muted d-block mt-1">ID: {{ $translation->proofreader->id }}</small>
                                                         @else
                                                             <span class="text-muted">—</span>
                                                         @endif

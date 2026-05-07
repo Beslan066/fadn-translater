@@ -8,21 +8,7 @@
                     <div
                         class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto">
                         <h5 class="card-title mb-0">Проверенные вами переводы</h5></div>
-                    <div class="d-md-flex justify-content-between align-items-center dt-layout-end col-md-auto ms-auto">
-                        <div class="dt-buttons btn-group flex-wrap">
-                            <div class="btn-group">
-                                <button
-                                    class="btn buttons-collection btn-label-primary dropdown-toggle me-4 waves-effect border-none"
-                                    tabindex="0" aria-controls="DataTables_Table_0" type="button" aria-haspopup="dialog"
-                                    aria-expanded="false"><span><span class="d-flex align-items-center gap-2"><i
-                                                class="icon-base ri ri-external-link-line icon-18px"></i> <span
-                                                class="d-none d-sm-inline-block">Экспорт</span></span></span></button>
-                            </div>
-                            <button type="button" class="btn btn-primary dropdown-toggle waves-effect waves-light show"
-                                    data-bs-toggle="dropdown" aria-expanded="true"></i>Фильтр
-                            </button>
-                        </div>
-                    </div>
+
                 </div>
                 <hr class="my-0">
                 <div class="row m-3 mx-2 my-0 justify-content-between">
@@ -73,7 +59,7 @@
                                         class="dt-column-order"></span></th>
                                 <th data-dt-column="5" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Date: Activate to sort"
-                                    tabindex="0"><span class="dt-column-title" role="button">На проверке</span><span
+                                    tabindex="0"><span class="dt-column-title" role="button">Перевел</span><span
                                         class="dt-column-order"></span></th>
                                 <th data-dt-column="7" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort"
@@ -82,9 +68,6 @@
                                 <th data-dt-column="7" rowspan="1" colspan="1"
                                     class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort"
                                     tabindex="0"><span class="dt-column-title" role="button">Сообщение</span><span
-                                        class="dt-column-order"></span></th>
-                                <th class="d-flex align-items-center dt-orderable-none" data-dt-column="8" rowspan="1"
-                                    colspan="1" aria-label="Actions"><span class="dt-column-title">Действие</span><span
                                         class="dt-column-order"></span></th>
                             </tr>
                             </thead>
@@ -114,23 +97,7 @@
                                     <td style="white-space: normal;">
                                         <p>{{$translation->reject_reason}}</p>
                                     </td>
-                                    <td class="d-flex align-items-center">
-                                        <div class="d-inline-block"><a href="javascript:;"
-                                                                       class="btn btn-sm btn-text-secondary rounded-pill btn-icon dropdown-toggle hide-arrow"
-                                                                       data-bs-toggle="dropdown"><i
-                                                    class="icon-base ri ri-more-2-line icon-22px"></i></a>
-                                            <ul class="dropdown-menu dropdown-menu-end m-0">
-                                                <li><a href="javascript:;" class="dropdown-item">Details</a></li>
-                                                <li><a href="javascript:;" class="dropdown-item">Archive</a></li>
-                                                <div class="dropdown-divider"></div>
-                                                <li><a href="javascript:;"
-                                                       class="dropdown-item text-danger delete-record">Delete</a>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                        <a href="javascript:;"
-                                           class="btn btn-sm btn-text-secondary rounded-pill btn-icon item-edit"><i
-                                                class="icon-base ri ri-edit-box-line icon-22px"></i></a></td>
+
                                 </tr>
                             @endforeach
                             </tbody>

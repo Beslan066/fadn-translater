@@ -15,9 +15,8 @@ class RegionAdminController extends Controller
 
     public function home()
     {
-
-
         $region = Region::query()->where('id', auth()->user()->region_id)->first();
+
         // Статистика по переводам
         $translationStats = Translation::where('region_id', $region->id)
             ->selectRaw('
@@ -37,7 +36,7 @@ class RegionAdminController extends Controller
         // Активные переводчики региона
         $translators = $region->translators()
             ->withCount(['translations as completed_translations' => function($query) use ($region) {
-                $query->where('status', Translation::STATUS_TRANSLATED)
+                $query->where('status', Translation::STATUS_PROOFREAD)
                     ->where('region_id', $region->id);
             }])
             ->orderBy('completed_translations', 'desc')
@@ -52,31 +51,36 @@ class RegionAdminController extends Controller
             ->orderBy('completed_proofreads', 'desc')
             ->get();
 
-        $translatorsCount = Region::withCount(['translators'])->get()->sum('translators_count');
-        $proofreadersCount = Region::withCount(['proofreaders'])->get()->sum('proofreaders_count');
+        $translatorsCount = $translators->count();
+        $proofreadersCount = $proofreaders->count();
 
-
-        // Топ корректоров и переводчиков
+        // Топ переводчиков по завершенным переводам (STATUS_PROOFREAD) - исправленный запрос
         $topTranslators = User::where('role', 'translator')
-            ->withCount(['translations' => function($query) {
-                $query->where('status', Translation::STATUS_TRANSLATED);
-            }])
             ->where('region_id', auth()->user()->region_id)
-            ->orderBy('translations_count', 'desc')
+            ->whereHas('translations', function($query) {
+                $query->where('status', Translation::STATUS_PROOFREAD);
+            })
+            ->withCount(['translations as completed_translations' => function($query) {
+                $query->where('status', Translation::STATUS_PROOFREAD);
+            }])
+            ->orderBy('completed_translations', 'desc')
             ->take(5)
             ->get();
 
+        // Топ корректоров по количеству проверенных предложений - исправленный запрос
         $topProofreaders = User::where('role', 'proofreader')
+            ->where('region_id', auth()->user()->region_id)
+            ->whereHas('proofreadByMe', function($query) {
+                $query->where('status', Translation::STATUS_PROOFREAD);
+            })
             ->withCount(['proofreadByMe as proofreads_count' => function($query) {
                 $query->where('status', Translation::STATUS_PROOFREAD);
             }])
-            ->where('region_id', auth()->user()->region_id)
             ->orderBy('proofreads_count', 'desc')
             ->take(5)
             ->get();
 
         // Неподтвержденные пользователи
-
         $users = User::query()
             ->where('is_active', 0)
             ->where('region_id', auth()->user()->region_id)
@@ -91,7 +95,7 @@ class RegionAdminController extends Controller
             'users' => $users,
             'region' => $region,
             'translatedTranslations' => $translationStats->translated ?? 0,
-            'completedTranslations' => $translationStats->proofread?? 0,
+            'completedTranslations' => $translationStats->proofread ?? 0,
             'rejectedTranslations' => $translationStats->rejected ?? 0,
             'translators' => $translators,
             'proofreaders' => $proofreaders,
@@ -108,22 +112,19 @@ class RegionAdminController extends Controller
         ]);
 
         $query = Sentence::query()
-            ->with(['translationForRegion' => function($q) use ($regionId) {
+            ->with(['translations' => function($q) use ($regionId) {
                 $q->where('region_id', $regionId);
             }]);
 
         // УЛУЧШЕННЫЙ ПОИСК
         if ($request->search) {
             $searchTerm = trim($request->search);
+            $searchTerm = preg_replace('/\s+/', ' ', $searchTerm);
+            $searchTerm = preg_replace('/[^\p{L}\p{N}\s]/u', '', $searchTerm);
 
-            // Чистим поисковый запрос
-            $searchTerm = preg_replace('/\s+/', ' ', $searchTerm); // Заменяем множественные пробелы на один
-            $searchTerm = preg_replace('/[^\p{L}\p{N}\s]/u', '', $searchTerm); // Убираем спецсимволы
-
-            // Разбиваем на слова
             $words = explode(' ', $searchTerm);
             $words = array_filter($words, function($word) {
-                return mb_strlen(trim($word)) > 2; // Ищем слова длиннее 2 символов
+                return mb_strlen(trim($word)) > 2;
             });
 
             if (!empty($words)) {
@@ -138,24 +139,63 @@ class RegionAdminController extends Controller
             }
         }
 
+        // Фильтр по статусу - ИСПРАВЛЕННЫЙ
         if ($request->status) {
-            $query->whereHas('translationForRegion', function($q) use ($request, $regionId) {
-                $q->where('region_id', $regionId)
-                    ->where('status', $request->status);
-            });
+            switch ($request->status) {
+                case 'not_started':
+                    $query->whereDoesntHave('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId);
+                    });
+                    break;
+                case 'assigned':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_ASSIGNED);
+                    });
+                    break;
+                case 'translated':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_TRANSLATED);
+                    });
+                    break;
+                case 'proofread':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_PROOFREAD);
+                    });
+                    break;
+                case 'completed_by_admin':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_COMPLETED_BY_ADMIN);
+                    });
+                    break;
+                case 'rejected':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_REJECTED);
+                    });
+                    break;
+            }
         }
 
         $limit = min($request->limit ?? 20, 50);
         $sentences = $query->paginate($limit);
 
+        // Добавляем computed атрибут для каждого предложения
+        foreach ($sentences as $sentence) {
+            $sentence->translationForRegion = $sentence->translations->first();
+        }
+
         return view('pages.region-admin.sentences', [
             'sentences' => $sentences,
             'translationStatuses' => [
-                'proofread' => \App\Models\Translation::STATUS_PROOFREAD,
-                'translated' => \App\Models\Translation::STATUS_TRANSLATED,
-                'completed_by_admin' => \App\Models\Translation::STATUS_COMPLETED_BY_ADMIN,
-                'assigned' => \App\Models\Translation::STATUS_ASSIGNED,
-                'rejected' => \App\Models\Translation::STATUS_REJECTED
+                'proofread' => Translation::STATUS_PROOFREAD,
+                'translated' => Translation::STATUS_TRANSLATED,
+                'completed_by_admin' => Translation::STATUS_COMPLETED_BY_ADMIN,
+                'assigned' => Translation::STATUS_ASSIGNED,
+                'rejected' => Translation::STATUS_REJECTED
             ],
             'filters' => $request->all(),
             'currentLimit' => $limit
@@ -423,6 +463,123 @@ class RegionAdminController extends Controller
         return view('pages.region-admin.users', [
             'users' => $users,
             'filters' => $request->all(),
+        ]);
+    }
+
+    public function otherSentences(Request $request)
+    {
+        $user = auth()->user();
+        $regionId = $user->region_id;
+        $region = Region::find($regionId);
+
+        $request->validate([
+            'limit' => 'nullable|integer|min:1|max:50'
+        ]);
+
+        $query = Sentence::query()
+            ->where('otherSentence', '>', 0)  // Только дополнительные предложения
+            ->with(['translations' => function($q) use ($regionId) {
+                $q->where('region_id', $regionId);
+            }]);
+
+        // Поиск
+        if ($request->search) {
+            $searchTerm = trim($request->search);
+            $searchTerm = preg_replace('/\s+/', ' ', $searchTerm);
+            $searchTerm = preg_replace('/[^\p{L}\p{N}\s]/u', '', $searchTerm);
+
+            $words = explode(' ', $searchTerm);
+            $words = array_filter($words, function($word) {
+                return mb_strlen(trim($word)) > 2;
+            });
+
+            if (!empty($words)) {
+                $query->where(function($q) use ($words) {
+                    foreach ($words as $word) {
+                        $cleanWord = trim($word);
+                        if (!empty($cleanWord)) {
+                            $q->orWhere('sentence', 'LIKE', '%' . $cleanWord . '%');
+                        }
+                    }
+                });
+            }
+        }
+
+        // Фильтр по статусу
+        if ($request->status) {
+            switch ($request->status) {
+                case 'not_started':
+                    $query->whereDoesntHave('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId);
+                    });
+                    break;
+                case 'assigned':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_ASSIGNED);
+                    });
+                    break;
+                case 'translated':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_TRANSLATED);
+                    });
+                    break;
+                case 'proofread':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_PROOFREAD);
+                    });
+                    break;
+                case 'completed_by_admin':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_COMPLETED_BY_ADMIN);
+                    });
+                    break;
+                case 'rejected':
+                    $query->whereHas('translations', function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                            ->where('status', Translation::STATUS_REJECTED);
+                    });
+                    break;
+            }
+        }
+
+        // Фильтр по типу дополнительного предложения
+        if ($request->other_type) {
+            $query->where('otherSentence', $request->other_type);
+        }
+
+        $limit = min($request->limit ?? 20, 50);
+        $sentences = $query->paginate($limit);
+
+        // Добавляем перевод для каждого предложения
+        foreach ($sentences as $sentence) {
+            $sentence->translationForRegion = $sentence->translations->first();
+        }
+
+        // Статистика по типам дополнительных предложений (без фильтра по региону, так как предложения общие)
+        $stats = [
+            'total' => Sentence::where('otherSentence', '>', 0)->count(),
+            'type1' => Sentence::where('otherSentence', 1)->count(),
+            'type2' => Sentence::where('otherSentence', 2)->count(),
+            'type3' => Sentence::where('otherSentence', 3)->count(),
+        ];
+
+        return view('pages.region-admin.other-sentences', [
+            'sentences' => $sentences,
+            'region' => $region,
+            'stats' => $stats,
+            'translationStatuses' => [
+                'proofread' => Translation::STATUS_PROOFREAD,
+                'translated' => Translation::STATUS_TRANSLATED,
+                'completed_by_admin' => Translation::STATUS_COMPLETED_BY_ADMIN,
+                'assigned' => Translation::STATUS_ASSIGNED,
+                'rejected' => Translation::STATUS_REJECTED
+            ],
+            'filters' => $request->all(),
+            'currentLimit' => $limit
         ]);
     }
 }

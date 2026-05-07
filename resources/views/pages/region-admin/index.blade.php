@@ -24,7 +24,7 @@
                     </div>
                 </div>
 
-                <!-- Назначено -->
+                <!-- На проверке -->
                 <div class="col" style="height: 191px; max-width: 250px;">
                     <div class="card h-100">
                         <div class="card-header d-flex align-items-center justify-content-between">
@@ -42,7 +42,6 @@
                         </div>
                     </div>
                 </div>
-
 
                 <!-- Отклонено -->
                 <div class="col" style="height: 191px; max-width: 250px;">
@@ -98,97 +97,107 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
         <!--/ four cards -->
 
         <div class="row gy-6">
-            <!-- Sales by Countries -->
+            <!-- Топ переводчиков -->
             <div class="col-xl-6 col-md-6">
                 <div class="card h-100">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <h5 class="card-title m-0 me-2">Топ переводчиков</h5>
+                        <small class="text-muted">По завершенным переводам</small>
                     </div>
-
                     <div class="card-body">
-                        @foreach($topTranslators as $item)
+                        @forelse($topTranslators as $translator)
                             <div class="d-flex justify-content-between">
                                 <div class="d-flex align-items-center mb-4">
                                     <div class="avatar me-4">
                                         <div class="avatar-initial bg-label-success rounded-circle">
-                                            @if(isset($item->avatar))
-                                                <img src="{{asset('storage/' . $item->avatar)}}" alt="">
+                                            @if(isset($translator->avatar))
+                                                <img src="{{ Storage::disk('public')->url($translator->avatar) }}" alt="">
                                             @else
-                                                <img src="{{asset('assets/img/user.png')}}" alt="">
+                                                <img src="{{ asset('assets/img/user.png') }}" alt="">
                                             @endif
                                         </div>
                                     </div>
                                     <div>
                                         <div class="d-flex align-items-center gap-1 mb-1">
-                                            <h6 class="mb-0">{{$item->name}}</h6>
+                                            <h6 class="mb-0">{{ $translator->name }}</h6>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="text-end">
-                                    <h6 class="mb-1">{{$item->translations_count}}</h6>
+                                    <h6 class="mb-1">{{ $translator->completed_translations ?? 0 }}</h6>
                                     <small class="text-body-secondary">Переведено</small>
                                 </div>
                             </div>
-                        @endforeach
+                        @empty
+                            <div class="text-center py-4">
+                                <i class="ri-user-line fs-1 text-muted"></i>
+                                <p class="mt-2 text-muted mb-0">Нет завершенных переводов</p>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
-            <!--/ Sales by Countries -->
-            <!-- Sales by Countries -->
+
+            <!-- Топ корректоров -->
             <div class="col-xl-6 col-md-6">
                 <div class="card h-100">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <h5 class="card-title m-0 me-2">Топ корректоров</h5>
+                        <small class="text-muted">По проверенным переводам</small>
                     </div>
                     <div class="card-body">
-                        @foreach($topProofreaders as $item)
+                        @forelse($topProofreaders as $proofreader)
                             <div class="d-flex justify-content-between">
                                 <div class="d-flex align-items-center mb-4">
                                     <div class="avatar me-4">
-                                        <div class="avatar-initial bg-label-success rounded-circle">
-                                            @if(isset($item->avatar))
-                                                <img src="{{asset('storage/' . $item->avatar)}}" alt="">
+                                        <div class="avatar-initial bg-label-info rounded-circle">
+                                            @if(isset($proofreader->avatar))
+                                                <img src="{{ Storage::disk('public')->url($proofreader->avatar) }}" alt="">
                                             @else
-                                                <img src="{{asset('assets/img/user.png')}}" alt="">
+                                                <img src="{{ asset('assets/img/user.png') }}" alt="">
                                             @endif
                                         </div>
                                     </div>
                                     <div>
                                         <div class="d-flex align-items-center gap-1 mb-1">
-                                            <h6 class="mb-0">{{$item->name}}</h6>
+                                            <h6 class="mb-0">{{ $proofreader->name }}</h6>
                                         </div>
-                                        </div>
+                                    </div>
                                 </div>
                                 <div class="text-end">
-                                    <h6 class="mb-1">{{$item->translations_count}}</h6>
-                                    <small class="text-body-secondary">Переведено</small>
+                                    <h6 class="mb-1">{{ $proofreader->proofreads_count ?? 0 }}</h6>
+                                    <small class="text-body-secondary">Проверено</small>
                                 </div>
                             </div>
-                        @endforeach
+                        @empty
+                            <div class="text-center py-4">
+                                <i class="ri-user-line fs-1 text-muted"></i>
+                                <p class="mt-2 text-muted mb-0">Нет проверенных переводов</p>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
-            <!--/ Sales by Countries -->
 
+            <!-- Неподтвержденные пользователи -->
             <div class="col-12">
                 <div class="card overflow-hidden">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <h5 class="card-title m-0 me-2">Неподтвержденные пользователи</h5>
                     </div>
                     <div class="table-responsive">
-
                         <table class="table table-sm">
                             <thead>
                             <tr>
                                 <th class="text-truncate">Имя</th>
                                 <th class="text-truncate">Email</th>
                                 <th class="text-truncate">Зарегистрирован</th>
+                                <th class="text-truncate">Регион</th>
                                 <th class="text-truncate">Действие</th>
                             </tr>
                             </thead>
@@ -198,23 +207,21 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar avatar-sm me-4">
-                                                @if(isset($item->avatar))
-                                                    <img src="{{asset('storage/' . $item->avatar)}}" alt="">
+                                                @if(isset($user->avatar))
+                                                    <img src="{{ Storage::disk('public')->url($user->avatar) }}" alt="">
                                                 @else
-                                                    <img src="{{asset('assets/img/user.png')}}" alt="">
+                                                    <img src="{{ asset('assets/img/user.png') }}" alt="">
                                                 @endif
                                             </div>
                                             <div>
-                                                <h6 class="mb-0 text-truncate">{{$user->name}}</h6>
+                                                <h6 class="mb-0 text-truncate">{{ $user->name }}</h6>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="text-truncate">{{$user->email}}</td>
-                                    <td><span class="badge bg-label-success rounded-pill">{{$user->created_at}}</span></td>
+                                    <td class="text-truncate">{{ $user->email }}</td>
+                                    <td><span class="badge bg-label-success rounded-pill">{{ $user->created_at->format('d.m.Y') }}</span></td>
                                     <td class="text-truncate">
-                                        <div class="d-flex align-items-center">
-                                            <span>Ингушетия</span>
-                                        </div>
+                                        <span class="badge bg-label-info">{{ $user->region->name ?? 'Не указан' }}</span>
                                     </td>
                                     <td class="d-flex align-items-center">
                                         <div class="d-inline-block">
@@ -224,7 +231,7 @@
                                                 <i class="icon-base ri ri-more-2-line icon-22px"></i>
                                             </a>
                                             <ul class="dropdown-menu dropdown-menu-end m-0">
-                                                <li><a class="dropdown-item">Создан: {{$user->created_at}}</a></li>
+                                                <li><a class="dropdown-item">Создан: {{ $user->created_at->format('d.m.Y H:i') }}</a></li>
                                                 @if($user->deleted_at)
                                                     <li>
                                                         <form action="{{ route('users.restore', $user->id) }}" method="POST">
@@ -255,7 +262,7 @@
                                                 </li>
                                             </ul>
                                         </div>
-                                        <a href="{{route('users.edit', $user->id)}}"
+                                        <a href="{{ route('users.edit', $user->id) }}"
                                            class="btn btn-sm btn-text-secondary rounded-pill btn-icon item-edit">
                                             <i class="icon-base ri ri-edit-box-line icon-22px"></i>
                                         </a>
@@ -265,12 +272,11 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-2">
-
+                    <div class="card-footer">
+                        {{ $users->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 @endsection

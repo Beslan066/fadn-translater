@@ -43,13 +43,37 @@ class SentenceController extends Controller
     {
         $search = $request->input('search');
 
-        $sentences = Sentence::query()->where('otherSentence', 1)->when($search, function($query) use ($search) {
+        // Посмотрим сколько всего записей с otherSentence = 1
+        $totalWithOne = Sentence::where('otherSentence', 1)->count();
+        $totalWithZero = Sentence::where('otherSentence', 0)->count();
+        $totalAll = Sentence::count();
+
+        // Для отладки - посмотрим первые 5 предложений с otherSentence = 1
+        $debugSentences = Sentence::where('otherSentence', 1)->take(5)->get(['id', 'sentence', 'otherSentence']);
+
+        \Log::info('=== DEBUG otherSentences ===');
+        \Log::info('Total all sentences: ' . $totalAll);
+        \Log::info('Total with otherSentence = 1: ' . $totalWithOne);
+        \Log::info('Total with otherSentence = 0: ' . $totalWithZero);
+        \Log::info('First 5 sentences with otherSentence=1:');
+        foreach ($debugSentences as $s) {
+            \Log::info("ID: {$s->id}, otherSentence: {$s->otherSentence}, sentence: " . substr($s->sentence, 0, 50));
+        }
+
+        $query = Sentence::query()->where('otherSentence', 1)->when($search, function($query) use ($search) {
             return $query->where('sentence', 'like', '%'.$search.'%');
-        })->paginate(20);
+        });
+
+        $sentences = $query->paginate(20);
 
         return view('pages.sentences.other-sentences', [
             'sentences' => $sentences,
-            'search' => $search
+            'search' => $search,
+            'debug' => [
+                'total_one' => $totalWithOne,
+                'total_zero' => $totalWithZero,
+                'total_all' => $totalAll
+            ]
         ]);
     }
 

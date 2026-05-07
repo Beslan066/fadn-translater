@@ -40,7 +40,7 @@
                         <h5 class="card-title mb-0">Список регионов</h5>
                     </div>
                     <div class="d-md-flex justify-content-between align-items-center dt-layout-end col-md-auto ms-auto">
-                        <div class="dt-buttons btn-group flex-wrap">
+                        <div class="dt-buttons flex-wrap">
                             <div class="btn-group">
                                 <button class="btn buttons-collection btn-label-primary dropdown-toggle me-4 waves-effect border-none"
                                         tabindex="0" aria-controls="DataTables_Table_0" type="button" aria-haspopup="dialog"
