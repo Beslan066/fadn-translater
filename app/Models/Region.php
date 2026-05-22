@@ -68,9 +68,10 @@ class Region extends Model
         return [
             'total' => $this->translations()->count(),
             'assigned' => $this->translations()->where('status', Translation::STATUS_ASSIGNED)->count(),
-            'translated' => $this->translations()->where('status', Translation::STATUS_TRANSLATED)->count(),
-            'proofread' => $this->translations()->where('status', Translation::STATUS_PROOFREAD)->count(),
-            'published' => $this->translations()->where('status', Translation::STATUS_REJECTED)->count(),
+            'translated' => $this->translations()->where('status', Translation::STATUS_TRANSLATED)->count(), // На проверке у корректора
+            'proofread' => $this->translations()->where('status', Translation::STATUS_PROOFREAD)->count(), // Проверено корректором
+            'rejected' => $this->translations()->where('status', Translation::STATUS_REJECTED)->count(),
+            'completed_by_admin' => $this->translations()->where('status', Translation::STATUS_COMPLETED_BY_ADMIN)->count(),
         ];
     }
 

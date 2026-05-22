@@ -103,11 +103,11 @@
                                 <th data-dt-column="7" rowspan="1" colspan="1" class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort" tabindex="0">
                                     <span class="dt-column-title" role="button">Корректоры</span>
                                 </th>
-                                <th data-dt-column="7" rowspan="1" colspan="1" class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort" tabindex="0">
-                                    <span class="dt-column-title" role="button">Переведено</span>
-                                </th>
-                                <th data-dt-column="7" rowspan="1" colspan="1" class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort" tabindex="0">
+                                <th data-dt-column="7" rowspan="1" colspan="1" class="dt-orderable-asc dt-orderable-desc">
                                     <span class="dt-column-title" role="button">На проверке</span>
+                                </th>
+                                <th data-dt-column="7" rowspan="1" colspan="1" class="dt-orderable-asc dt-orderable-desc">
+                                    <span class="dt-column-title" role="button">Переведено</span>
                                 </th>
                                 <th data-dt-column="8" rowspan="1" colspan="1" class="dt-orderable-asc dt-orderable-desc" aria-label="Status: Activate to sort" tabindex="0">
                                     <span class="dt-column-title" role="button">Статус</span>

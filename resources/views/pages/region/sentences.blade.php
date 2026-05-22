@@ -33,8 +33,8 @@
                         @php
                             $statusMap = [
                                 $translation::STATUS_ASSIGNED => ['text' => 'Назначен', 'color' => 'info'],
-                                $translation::STATUS_TRANSLATED => ['text' => 'На проверке', 'color' => 'warning'],
-                                $translation::STATUS_PROOFREAD => ['text' => 'Завершен', 'color' => 'success'],
+                                $translation::STATUS_TRANSLATED => ['text' => 'На проверке корректором', 'color' => 'warning'],
+                                $translation::STATUS_PROOFREAD => ['text' => 'Переведено', 'color' => 'success'],
                                 $translation::STATUS_COMPLETED_BY_ADMIN => ['text' => 'Завершен админом', 'color' => 'primary'],
                                 $translation::STATUS_REJECTED => ['text' => 'Отклонен', 'color' => 'danger'],
                             ];
