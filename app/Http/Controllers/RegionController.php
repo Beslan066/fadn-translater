@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Region\StoreRequest;
 use App\Models\Region;
+use App\Models\Sentence;
+use App\Models\Translation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -129,5 +131,22 @@ class RegionController extends Controller
 
             fclose($handle);
         }, 200, $headers);
+    }
+
+    /**
+     * Отображение переводов региона
+     */
+    public function sentences(Region $region)
+    {
+        // Получаем только переводы для этого региона с связанными данными
+        $translations = Translation::where('region_id', $region->id)
+            ->with(['sentence', 'translator', 'proofreader'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('pages.region.sentences', [
+            'region' => $region,
+            'translations' => $translations
+        ]);
     }
 }

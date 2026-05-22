@@ -2,8 +2,6 @@
 
 @section('content')
     <div class="card">
-
-        {{dd('gfsdg')}}
         <div class="d-flex align-items-center justify-content-between">
             <h5 class="card-header">Список дополнительных предложений корпуса</h5>
             <div class="form-floating form-floating" style="margin-right: 10px;">

@@ -130,7 +130,11 @@
                                     <td>
                                         <div class="d-flex justify-content-start align-items-center user-name">
                                             <div class="d-flex flex-column">
-                                                <span class="emp_name text-truncate h6 mb-0">{{ $region->name }}</span>
+                                                <a href="{{ route('regions.sentences', $region->id) }}"
+                                                   class="text-truncate h6 mb-0 underline"
+                                                   style="color: inherit; text-decoration: underline;">
+                                                    {{ $region->name }}
+                                                </a>
                                             </div>
                                         </div>
                                     </td>

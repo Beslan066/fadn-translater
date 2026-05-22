@@ -102,6 +102,7 @@ Route::patch('/regions/{region}', [RegionController::class, 'update'])->name('re
 Route::delete('/regions/{region}', [RegionController::class, 'destroy'])->name('regions.destroy');
 Route::get('/regions/export', [RegionController::class, 'export'])->name('regions.export');
 Route::get('/regions/search', [RegionController::class, 'search'])->name('admin.tags.search');
+Route::get('/regions/{region}/sentences', [RegionController::class, 'sentences'])->name('regions.sentences');
 
 // Translation routes
 Route::post('/translations', [TranslatorController::class, 'saveTranslation'])->middleware('role:translator');
