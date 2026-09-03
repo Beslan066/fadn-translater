@@ -135,7 +135,7 @@
                                     {{ $translation->sentence_id }}
                                 </td>
                                 <td>
-                                    <div class="text-truncate" data-bs-toggle="modal" data-bs-target="#translationModal7" title="Просмотр деталей" style="max-width: 300px; text-decoration: underline; cursor: pointer;" title="{{ $translation->sentence->sentence ?? 'N/A' }}">
+                                    <div class="text-truncate" data-bs-toggle="modal" data-bs-target="#translationModal{{ $translation->id }}" title="Просмотр деталей" style="max-width: 300px; text-decoration: underline; cursor: pointer;" title="{{ $translation->sentence->sentence ?? 'N/A' }}">
                                         {{ Str::limit($translation->sentence->sentence ?? 'Предложение удалено', 100) }}
                                     </div>
                                     @if($translation->sentence && $translation->sentence->otherSentence)
